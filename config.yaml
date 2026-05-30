@@ -1,0 +1,20 @@
+# Execution mode: "claude-code" or "api"
+mode: claude-code
+
+# If mode=api, provide API key (or set ANTHROPIC_API_KEY env var)
+anthropic_api_key: null
+
+# GitHub configuration
+github_token: ${GITHUB_TOKEN}
+github_repo: "example/repo"
+
+# Target project to work on
+project_root: "/home/ubuntu/bala/AIagentCoding"
+
+# Agent behavior
+max_retries: 3
+timeout_seconds: 600
+
+# Debug mode
+debug: true
+use_tmux: false

@@ -1,0 +1,7 @@
+# Ignore generated indexes (regenerate on each machine)
+knowledge-bases/
+
+# Keep source files and configs
+!agents/
+!sources/
+!manifest.yaml

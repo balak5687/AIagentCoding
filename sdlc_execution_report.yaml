@@ -1,0 +1,137 @@
+start_time: '2026-05-23T21:03:29.440902'
+issue_number: 3
+branch_name: feature/issue-3-dashboard-module-rev2
+phases:
+- phase: 1
+  name: fetch_issue
+  status: success
+  issue:
+    body: "EPIC: Dashboard Module\n**Purpose**\n\nProvide a centralized real-time\
+      \ operational overview of the garage business, including workflow visibility,\
+      \ financial tracking, operational alerts, and supply chain monitoring.\n\nThe\
+      \ dashboard should allow garage owners and managers to quickly understand:\n\
+      \n- Current operational status\n- Delayed or blocked jobs\n- Revenue and payment\
+      \ visibility\n- Supplier and inventory issues\n- Business performance indicators\n\
+      \n---------------------------------------------------------\n| Sidebar | Top\
+      \ Bar                                     |\n|         ---------------------------------------------|\n\
+      |         | KPI Cards                                  |\n|         | Alerts\
+      \                                     |\n|         | Jobs Snapshot        |\
+      \ Revenue Graph        |\n|         | Supply Issues                        \
+      \       |\n---------------------------------------------------------\n\n\n**Component\
+      \ 1 \u2014 Sidebar Navigation**\nPurpose:\nProvide global navigation across\
+      \ all platform modules.\nSidebar Modules\n\n1. Dashboard\n2. Jobs\n3. Customers\n\
+      4. Parts\n5. Invoices\n6. Suppliers\n7. Staff\n8. Reports\n9. Settings\n\nFunctional\
+      \ Requirements\n\n- Highlight active module\n- Allow click navigation\n- Support\
+      \ icon-based navigation (optional future enhancement)\n\n-------------------------------------------------------------------------------------------------\n\
+      **Component 2 \u2014 Top Bar**\nPurpose\nProvide quick access to search, notifications,\
+      \ and user profile information.\nSubcomponents\n\n**Search Bar**\nFields\n1.\
+      \ search_query (string)\n\nSearch Scope\n\n1. job_id\n2. customer_name\n3. vehicle_plate\n\
+      \n**Notifications Icon**\nNotification Types\n\n1. job_blocked\n2. supplier_delay\n\
+      3. low_stock\n4. unpaid_invoice\n\nNotification Object\n\n1. Fields\n2. id\n\
+      3. type\n4. message\n5. severity\n6. timestamp\n7. related_entity_id\n\nNotifications\
+      \ Example:\n\U0001F534 PO101 delayed (Supplier issue)\n\U0001F534 Job J103 blocked\
+      \ (No stock)\n\U0001F7E1 Supplier payment pending (\u20AC230)\n\nUser Profile\n\
+      \n1. Fields\n2. user_name\n3. role\n\nExample\nJohn (Owner)\nLogout\n\n---------------------------------------------------------\n\
+      \nComponent 3 \u2014 KPI Cards\nPurpose\nDisplay high-level operational and\
+      \ financial metrics.\n\n1) Jobs Today\njobs_today (int)\n\nDefinition: Count\
+      \ of jobs created today\n\n2) Pending Jobs\npending_jobs (int)\n\nDefinition:status\
+      \ != completed\n\n3) Revenue Today\nrevenue_today (float)\n\nDefinition: Sum\
+      \ of paid invoices for current day\n\n4) Pending Payments\npending_payments\
+      \ (float)\n\nDefinition:Sum of unpaid invoice balances\n\nKPI Example:\n\U0001F7E6\
+      \ Jobs Today: 5\n\U0001F7E8 Pending Jobs: 3\n\U0001F7E9 Revenue Today: \u20AC\
+      210\n\U0001F7E5 Pending Payments: \u20AC530\n\n--------------------------------------------------------------\n\
+      \n**Component 4 \u2014 Alerts Panel**\nPurpose\nHighlight operational issues\
+      \ requiring immediate attention.\n\nAlert Fields\n1. alert_id\n2. type\n3. message\n\
+      4. severity\n5. related_entity_id\n\nAlert Types\n1. job_blocked\n2. supplier_delay\n\
+      3. low_stock\n4. unpaid_invoice\n5. delayed_job\n\nAlert Example\n\n\U0001F534\
+      \ Job J103 blocked (No stock)\n\U0001F534 PO101 delayed (Supplier)\n\U0001F7E1\
+      \ 3 unpaid invoices\n\U0001F7E1 Low stock: Brake pads\n\n----------------------------------------------------------------------------\n\
+      \n**Component 5 \u2014 Jobs Snapshot**\nPurpose\nProvide quick visibility into\
+      \ active jobs, job progress, and delayed work.\n\nJob Snapshot Fields\n\n1.\
+      \ job_id\n2. vehicle\n3. issue_type\n4. status\n5. start_date\n6. due_date\n\
+      7. days_elapsed (derived)\n8. delivery_status (derived)\n9. Reason for delay\n\
+      \nIssue Type Examples\n\n- Brake Pad Change\n- Oil Service\n- Full Service\n\
+      - Engine Repair\n- AC Service\n- Battery Replacement\n\nExample:\nVehicle  \
+      \        | Issue              | Status              | Days | Delivery      \
+      \  | Delay Reason\nToyota Corolla   | Brake Pad Change   | \U0001F7E8 In Progress\
+      \      | 1    | \U0001F7E8 On Track      | \u2014\nBMW X5           | Oil Service\
+      \        | \U0001F7E9 Completed        | 0    | \U0001F7E9 Completed     | \u2014\
+      \nAudi A4          | Engine Repair      | \U0001F7E5 Waiting Parts    | 2  \
+      \  | \U0001F7E5 Delayed       | Brake pads unavailable\nHonda Civic      | AC\
+      \ Service         | \U0001F7E8 In Progress      | 1    | \U0001F7E8 On Track\
+      \      | \u2014\nFord Focus       | Battery Change     | \U0001F7E9 Completed\
+      \        | 0    | \U0001F7E9 Completed     | \u2014\n\n-------------------------------------------------------------------------------------------------------------------------------------\n\
+      \n\n**Component 6 \u2014 Revenue Graph**\nPurpose\nDisplay revenue trends for\
+      \ operational visibility.\n\nData Fields\n1. date\n2. revenue_amount\n UI Type\n\
+      1. Line chart\n2. Last 7 days view\n\nRevenue Graph Example:\nDay 1 \u2192 \u20AC\
+      200\nDay 2 \u2192 \u20AC350\nDay 3 \u2192 \u20AC300\nDay 4 \u2192 \u20AC450\n\
+      Day 5 \u2192 \u20AC210\n\n-------------------------------------------------------------------------------------------------------------------\n\
+      **Component 7 \u2014 Supply Issues**\nPurpose\nDisplay supplier-related operational\
+      \ blockers and delayed purchase orders affecting jobs.\n\nFields\n1. po_id\n\
+      2. supplier_name\n3. delay_status\n4. affected_jobs_count\n\nSupply Issue Example\n\
+      \U0001F534 PO101 delayed (AutoParts Ltd)\n\u2192 1 job affected\n----------------------------------------------------------------------------------------------------------------------------\n\
+      \nJust notes not any modules:\n\nUser Actions & Navigation\n\nFunctional Requirements:\n\
+      1)KPI Cards\nClicking KPI should navigate to filtered related data\nExample:\n\
+      Pending Jobs KPI \u2192 Open Jobs module with pending jobs filter\n\n2)Alerts\n\
+      Clicking alert should navigate to related issue\nExamples:\nSupplier delay alert\
+      \ \u2192 Open Suppliers module\nJob blocked alert \u2192 Open Job Detail\nJobs\
+      \ Snapshot\nClicking job should open Job Detail screen\n\nData Source mapping:\n\
+      \nDashboard Section-> Source Module\n1) KP1 cards->Jobs , Invoices\n2) Alerts-\
+      \ Job, Part, Suppliers, Invoices\n3) Jobs snapshort- Jobs\n4) Revenue Graph-\
+      \ Invoices\n5) Supply Issues - Suppliers\n6) Low Stock Alerts- Parts\n7) Delayed\
+      \ Jobs- Jobs\n\nRefresh Behavior\nRequirements\nDashboard auto-refresh every\
+      \ 60 seconds\nManual refresh option available\n\nEmpty States\n1)No Jobs\n No\
+      \ active jobs today\n2)No Alerts\n No operational alerts\n3)No Revenue Data\n\
+      \ No revenue data available\n\nMobile Responsive UX Requirements:\n\n1. Responsive\
+      \ mobile layout\n2. Touch-friendly buttons\n3. Mobile-first dashboard structure\n\
+      4. Vertical stacking for smaller screens\n\n"
+    labels: []
+    number: 3
+    title: 'EPIC: Dashboard Module Rev2'
+- phase: 2
+  name: analyze_requirements
+  status: success
+  analysis:
+    title: 'EPIC: Dashboard Module Rev2'
+    type: epic
+    components:
+    - Sidebar Navigation**
+    - Top Bar**
+    - KPI Cards
+    - Alerts Panel**
+    - Jobs Snapshot**
+    - Revenue Graph**
+    - Supply Issues**
+    backend_required: true
+    frontend_required: true
+    database_changes: true
+    playbooks:
+    - file_operations
+    - python_flask_dynamodb_style
+    - flutter_material3_style
+    - production_security_checklist
+    - modern_ui_ux_patterns
+  playbooks_count: 5
+- phase: 3
+  name: create_feature_branch
+  status: success
+  branch_name: feature/issue-3-dashboard-module-rev2
+- phase: 4
+  name: implement_backend
+  status: success
+  files_created:
+  - app/routes/dashboard.py
+  - app/services/dashboard_service.py
+- phase: 5
+  name: commit_backend
+  status: success
+- phase: 6
+  name: push_and_pr
+  status: success
+files_created:
+- app/routes/dashboard.py
+- app/services/dashboard_service.py
+files_modified:
+- app/routes/__init__.py
+pr_url: https://github.com/aravindmk1011/GreasyNuts/pull/3
+end_time: '2026-05-23T21:03:40.885121'

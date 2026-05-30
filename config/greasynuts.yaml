@@ -1,0 +1,80 @@
+# GreasyNuts Project Configuration for SDLC System
+# Created: 2026-05-23
+
+projects:
+  backend:
+    name: "GreasyNuts Backend"
+    path: "/home/ubuntu/greasynuts/dev/backend/GreasyNuts"
+    type: "backend"
+    tech_stack: "python-flask-dynamodb"
+
+    # Git configuration
+    branch: "testing/sdlc-issue-3"  # SDLC system works only in this branch
+    base_branch: "dev"               # Created from dev branch
+
+    # Project metadata
+    architecture: "3-layer"          # Routes → Services → Repositories
+    entry_points:
+      - "main.py"
+      - "app/__init__.py"
+
+    # Key directories
+    routes_dir: "app/routes"
+    services_dir: "app/services"
+    repositories_dir: "app/repositories"
+    models_dir: "app/models"
+    middleware_dir: "app/middleware"
+    utils_dir: "app/utils"
+    tests_dir: "tests"
+
+    # Stats (as of 2026-05-23)
+    files_count: 2215
+    lines_of_code: 327000
+
+  frontend:
+    name: "GreasyNuts Frontend"
+    path: "/home/ubuntu/greasynuts/dev/frontend/GreasyNutsFrontEnd/flutter_prototype"
+    type: "frontend"
+    tech_stack: "flutter-material3"
+
+    # Git configuration
+    branch: "testing/sdlc-issue-3"
+    base_branch: "dev"
+
+    # Project metadata
+    framework: "Flutter"
+    ui_framework: "Material Design 3"
+
+    # Key directories
+    screens_dir: "lib/screens"
+    widgets_dir: "lib/widgets"
+    services_dir: "lib/services"
+    models_dir: "lib/models"
+
+    # Stats (as of 2026-05-23)
+    files_count: 98
+    lines_of_code: 24500
+
+# GitHub configuration
+github:
+  issues_repo: "aravindmk1011/GreasyNutsIssues"
+  code_repo_backend: "aravindmk1011/GreasyNuts"
+  code_repo_frontend: "aravindmk1011/GreasyNutsFrontEnd"
+
+  # Test issue
+  test_issue: 3  # EPIC: Dashboard Module Rev2
+
+# SDLC System behavior
+sdlc:
+  # Where to store project brain metadata
+  metadata_dir: ".sdlc/project_brain"
+  cache_dir: ".sdlc/cache"
+
+  # Safety settings
+  auto_commit: true
+  auto_push: false  # Manual push only during testing
+  require_approval: false  # No human approval during testing
+
+  # Quality settings
+  min_confidence: 70  # Minimum confidence score to proceed
+  max_retries: 3      # Max retry attempts per agent

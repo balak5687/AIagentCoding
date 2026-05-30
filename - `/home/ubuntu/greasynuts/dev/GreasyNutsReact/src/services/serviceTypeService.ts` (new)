@@ -1,0 +1,33 @@
+import api from '@/services/api'
+
+export interface ServiceType {
+  id: number
+  name: string
+  description?: string
+  category?: string
+  estimatedDuration?: number
+  basePrice?: number
+  isActive: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+const serviceTypeService = {
+  /**
+   * Fetch all service types
+   */
+  getServiceTypes: async (): Promise<ServiceType[]> => {
+    const response = await api.get('/service-types')
+    return response.data
+  },
+
+  /**
+   * Fetch a single service type by ID
+   */
+  getServiceType: async (id: number): Promise<ServiceType> => {
+    const response = await api.get(`/service-types/${id}`)
+    return response.data
+  },
+}
+
+export default serviceTypeService

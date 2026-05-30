@@ -1,0 +1,7 @@
+class AlertsPanel extends StatelessWidget {
+  const AlertsPanel({
+    super.key,
+    required this.alerts,
+    this.onViewAll,
+    this.onAlertTap,
+  });

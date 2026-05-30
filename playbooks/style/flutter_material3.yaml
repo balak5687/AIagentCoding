@@ -1,0 +1,507 @@
+metadata:
+  level: style
+  version: "1.0.0"
+  created_by: human
+  supervised_by: "flutter_tech_lead"
+  approved_date: "2026-05-23"
+  last_updated: "2026-05-23"
+  project_context: "GreasyNuts ERP - Flutter frontend"
+
+name: flutter_material3_style
+description: Flutter with Material Design 3, Provider state management, and modern UI patterns
+category: style
+language: dart
+framework: flutter
+
+# Based on: Material Design 3, Flutter best practices, GreasyNuts patterns
+
+style_rules:
+  general_dart:
+    - rule: "Use 2 spaces for indentation"
+      enforcement: strict
+
+    - rule: "Line length max 80 characters"
+      enforcement: warning
+      exception: "Long strings, import statements"
+
+    - rule: "Use trailing commas for better formatting"
+      enforcement: recommended
+      example: |
+        Widget build(BuildContext context) {
+          return Container(
+            padding: EdgeInsets.all(16),
+            child: Text('Hello'),
+          ); // ← Trailing comma
+        }
+
+    - rule: "Use const constructors whenever possible"
+      enforcement: strict
+      benefit: "Improves performance by reusing widget instances"
+      example: |
+        const SizedBox(height: 16)
+        const Text('Static text')
+
+    - rule: "Use named parameters for widget constructors"
+      enforcement: recommended
+      example: |
+        CustomButton(
+          text: 'Submit',
+          onPressed: handleSubmit,
+          isLoading: false,
+        )
+
+  flutter_specific:
+    - rule: "Organize lib/ directory by feature"
+      enforcement: strict
+      structure: |
+        lib/
+        ├── main.dart
+        ├── screens/
+        │   ├── dashboard/
+        │   ├── inventory/
+        │   └── auth/
+        ├── services/
+        ├── models/
+        ├── components/
+        ├── utils/
+        └── widgets/
+
+    - rule: "Use Provider for state management"
+      enforcement: strict
+      pattern: |
+        # GreasyNuts pattern: Provider + ChangeNotifier
+
+        class AuthProvider extends ChangeNotifier {
+          String? _token;
+
+          void setToken(String token) {
+            _token = token;
+            notifyListeners();
+          }
+        }
+
+        # Usage:
+        Provider.of<AuthProvider>(context).setToken(token);
+
+    - rule: "Use stateless widgets by default"
+      enforcement: recommended
+      guidance: "Only use StatefulWidget when widget manages its own state"
+
+    - rule: "Extract reusable widgets to components/"
+      enforcement: strict
+      example: |
+        // components/custom_button.dart
+        class CustomButton extends StatelessWidget {
+          final String text;
+          final VoidCallback onPressed;
+          final bool isLoading;
+
+          const CustomButton({
+            Key? key,
+            required this.text,
+            required this.onPressed,
+            this.isLoading = false,
+          }) : super(key: key);
+
+          @override
+          Widget build(BuildContext context) {
+            return ElevatedButton(
+              onPressed: isLoading ? null : onPressed,
+              child: isLoading
+                  ? const CircularProgressIndicator()
+                  : Text(text),
+            );
+          }
+        }
+
+  material_design_3:
+    - rule: "Use Material 3 theming"
+      enforcement: strict
+      setup: |
+        MaterialApp(
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF2196F3),
+              brightness: Brightness.light,
+            ),
+            cardTheme: CardTheme(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        )
+
+    - rule: "Use semantic color tokens"
+      enforcement: strict
+      pattern: |
+        # Use theme colors, not hardcoded values
+        ✅ Theme.of(context).colorScheme.primary
+        ✅ Theme.of(context).colorScheme.surface
+        ❌ Color(0xFF2196F3)
+
+    - rule: "Use Google Fonts for typography"
+      enforcement: recommended
+      example: |
+        import 'package:google_fonts/google_fonts.dart';
+
+        textTheme: GoogleFonts.interTextTheme(
+          Theme.of(context).textTheme,
+        )
+
+    - rule: "Consistent spacing scale"
+      enforcement: strict
+      scale: "4, 8, 12, 16, 24, 32, 48, 64"
+      example: |
+        const EdgeInsets.all(16)  # Standard padding
+        const SizedBox(height: 24)  # Medium spacing
+        const EdgeInsets.symmetric(horizontal: 32, vertical: 16)
+
+  api_integration:
+    - rule: "Use Dio for HTTP requests"
+      enforcement: strict
+      setup: |
+        # services/api_client.dart
+        class ApiClient {
+          static final Dio _dio = Dio(
+            BaseOptions(
+              baseUrl: '/api',  # Nginx proxy
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+            ),
+          );
+
+          static void addAuthInterceptor(String token) {
+            _dio.interceptors.add(
+              InterceptorsWrapper(
+                onRequest: (options, handler) {
+                  options.headers['Authorization'] = 'Bearer $token';
+                  return handler.next(options);
+                },
+                onError: (error, handler) {
+                  if (error.response?.statusCode == 401) {
+                    // Auto-logout on unauthorized
+                    // Navigate to login
+                  }
+                  return handler.next(error);
+                },
+              ),
+            );
+          }
+        }
+
+    - rule: "Create service classes for API endpoints"
+      enforcement: strict
+      pattern: |
+        # services/customer_service.dart
+        class CustomerService {
+          static Future<List<Customer>> getAll() async {
+            try {
+              final response = await ApiClient.get('/customers');
+              return (response.data as List)
+                  .map((json) => Customer.fromJson(json))
+                  .toList();
+            } catch (e) {
+              throw ApiException('Failed to fetch customers: $e');
+            }
+          }
+
+          static Future<Customer> create(Customer customer) async {
+            final response = await ApiClient.post(
+              '/customers',
+              data: customer.toJson(),
+            );
+            return Customer.fromJson(response.data);
+          }
+        }
+
+    - rule: "Use models with fromJson/toJson"
+      enforcement: strict
+      example: |
+        class Customer {
+          final String id;
+          final String name;
+          final String email;
+
+          Customer({
+            required this.id,
+            required this.name,
+            required this.email,
+          });
+
+          factory Customer.fromJson(Map<String, dynamic> json) {
+            return Customer(
+              id: json['customer_id'],
+              name: json['name'],
+              email: json['email'],
+            );
+          }
+
+          Map<String, dynamic> toJson() {
+            return {
+              'customer_id': id,
+              'name': name,
+              'email': email,
+            };
+          }
+        }
+
+  responsive_design:
+    - rule: "Use LayoutBuilder for responsive breakpoints"
+      enforcement: recommended
+      breakpoints: "Mobile: <768px, Tablet: 768-1024px, Desktop: >1024px"
+      example: |
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 768) {
+              return MobileLayout();
+            } else if (constraints.maxWidth < 1024) {
+              return TabletLayout();
+            } else {
+              return DesktopLayout();
+            }
+          },
+        )
+
+    - rule: "Use MediaQuery for screen dimensions"
+      enforcement: strict
+      example: |
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktop = screenWidth > 1024;
+
+    - rule: "Collapsible sidebar for desktop"
+      enforcement: required_for_desktop
+      pattern: |
+        # GreasyNuts pattern
+        Scaffold(
+          body: Row(
+            children: [
+              AnimatedContainer(
+                duration: Duration(milliseconds: 200),
+                width: _sidebarCollapsed ? 72 : 240,
+                child: Sidebar(collapsed: _sidebarCollapsed),
+              ),
+              Expanded(child: MainContent()),
+            ],
+          ),
+        )
+
+  error_handling:
+    - rule: "Always use try-catch for async operations"
+      enforcement: strict
+      example: |
+        Future<void> loadData() async {
+          try {
+            final data = await CustomerService.getAll();
+            setState(() => customers = data);
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error: $e')),
+            );
+          }
+        }
+
+    - rule: "Show user-friendly error messages"
+      enforcement: strict
+      pattern: |
+        # Use SnackBar for non-critical errors
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save customer'),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: retry,
+            ),
+          ),
+        );
+
+        # Use Dialog for critical errors
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Error'),
+            content: Text('Cannot connect to server'),
+            actions: [
+              TextButton(
+                child: Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+
+  loading_states:
+    - rule: "Show loading indicators during async operations"
+      enforcement: strict
+      pattern: |
+        class MyScreen extends StatefulWidget {
+          @override
+          State<MyScreen> createState() => _MyScreenState();
+        }
+
+        class _MyScreenState extends State<MyScreen> {
+          bool _isLoading = false;
+
+          Future<void> loadData() async {
+            setState(() => _isLoading = true);
+            try {
+              // Load data
+            } finally {
+              setState(() => _isLoading = false);
+            }
+          }
+
+          @override
+          Widget build(BuildContext context) {
+            if (_isLoading) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+            return YourContent();
+          }
+        }
+
+  navigation:
+    - rule: "Use named routes for navigation"
+      enforcement: recommended
+      example: |
+        Navigator.pushNamed(context, '/customers');
+
+    - rule: "Consider go_router for complex navigation"
+      enforcement: recommended_for_scaling
+      guidance: "GreasyNuts currently uses simple Navigator, but go_router is better for deep linking"
+
+  security:
+    - rule: "Store tokens securely with shared_preferences"
+      enforcement: strict
+      example: |
+        # Store
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', token);
+
+        # Retrieve
+        final token = prefs.getString('auth_token');
+
+    - rule: "Never log sensitive data"
+      enforcement: critical
+      prohibited: "Tokens, passwords, personal data"
+
+    - rule: "Validate all user inputs"
+      enforcement: strict
+      example: |
+        TextFormField(
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Email is required';
+            }
+            if (!value.contains('@')) {
+              return 'Invalid email format';
+            }
+            return null;
+          },
+        )
+
+  performance:
+    - rule: "Use const constructors to avoid rebuilds"
+      enforcement: strict
+
+    - rule: "Use ListView.builder for long lists"
+      enforcement: strict
+      example: |
+        ListView.builder(
+          itemCount: items.length,
+          itemBuilder: (context, index) {
+            return ItemWidget(item: items[index]);
+          },
+        )
+
+    - rule: "Avoid unnecessary setState calls"
+      enforcement: recommended
+
+    - rule: "Use FutureBuilder/StreamBuilder for async data"
+      enforcement: recommended
+      example: |
+        FutureBuilder<List<Customer>>(
+          future: CustomerService.getAll(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return ErrorWidget(snapshot.error);
+            }
+            if (!snapshot.hasData) {
+              return CircularProgressIndicator();
+            }
+            return CustomerList(customers: snapshot.data!);
+          },
+        )
+
+production_readiness:
+  - check: "All API calls have error handling"
+    requirement: "Try-catch with user feedback"
+
+  - check: "Loading states implemented"
+    requirement: "Show progress indicators during async operations"
+
+  - check: "Responsive design tested"
+    requirement: "Works on mobile, tablet, desktop"
+
+  - check: "Authentication flow complete"
+    requirement: "Login, logout, token refresh, auto-logout on 401"
+
+  - check: "Offline handling"
+    requirement: "Graceful degradation when no network"
+
+  - check: "No hardcoded API URLs"
+    requirement: "Use environment variables or config"
+
+  - check: "Input validation on all forms"
+    requirement: "Required fields, format validation"
+
+  - check: "Accessibility"
+    requirement: "Semantic labels, sufficient contrast"
+
+modern_ui_patterns:
+  dashboard_layout:
+    pattern: "Grid of stat cards + quick actions + charts"
+    example: |
+      GridView.count(
+        crossAxisCount: screenWidth > 1024 ? 4 : 2,
+        children: [
+          StatCard(title: 'Revenue', value: '\$12,345'),
+          StatCard(title: 'Orders', value: '42'),
+          StatCard(title: 'Customers', value: '128'),
+          StatCard(title: 'Parts', value: '456'),
+        ],
+      )
+
+  data_table:
+    pattern: "DataTable with search, sort, pagination"
+    features: ["Row selection", "Action buttons", "Responsive"]
+
+  forms:
+    pattern: "Card-based form with sections"
+    components: ["TextFormField", "DropdownButton", "DatePicker", "Validation"]
+
+  module_hub:
+    pattern: "Overview screen with module cards"
+    example: "Dashboard → Inventory Module → Parts List"
+
+  sidebar_navigation:
+    pattern: "Collapsible sidebar with icons + labels"
+    states: "Expanded (240px), Collapsed (72px)"
+
+human_review_required:
+  - "Authentication flow changes"
+  - "API endpoint modifications"
+  - "State management refactoring"
+  - "New third-party packages"
+  - "Navigation structure changes"
+
+references:
+  - "Material Design 3: https://m3.material.io/"
+  - "Flutter Best Practices: https://flutter.dev/docs/development/best-practices"
+  - "Provider Package: https://pub.dev/packages/provider"
+  - "Dio HTTP Client: https://pub.dev/packages/dio"
+  - "GreasyNuts Implementation: /home/ubuntu/greasynuts/dev/frontend"

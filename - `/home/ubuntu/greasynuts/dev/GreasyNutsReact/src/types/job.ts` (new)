@@ -1,0 +1,305 @@
+// Job Status Enums
+export type JobStatus =
+  | "pending"
+  | "assigned"
+  | "in_progress"
+  | "completed"
+  | "cancelled"
+  | "on_hold";
+
+export type Priority = "low" | "medium" | "high" | "urgent";
+
+export type DeliveryStatus =
+  | "not_started"
+  | "in_transit"
+  | "delivered"
+  | "failed";
+
+// Core Job Interface
+export interface Job {
+  id?: string;
+  jobNumber?: string;
+  customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  vehicleId?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  vehicleYear?: number;
+  vehiclePlate?: string;
+  serviceTypeId?: string;
+  serviceTypeName?: string;
+  technicianId?: string;
+  technicianName?: string;
+  status?: JobStatus;
+  priority?: Priority;
+  deliveryStatus?: DeliveryStatus;
+  title?: string;
+  description?: string;
+  estimatedCost?: number;
+  actualCost?: number;
+  estimatedHours?: number;
+  actualHours?: number;
+  scheduledDate?: string;
+  startedAt?: string;
+  completedAt?: string;
+  dueDate?: string;
+  location?: string;
+  notes?: string;
+  internalNotes?: string;
+  partsRequired?: string[];
+  attachments?: string[];
+  recommendations?: Recommendation[];
+  costBreakdown?: CostBreakdown;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
+// Supporting Interfaces
+export interface Recommendation {
+  id: string;
+  title: string;
+  description: string;
+  priority: Priority;
+  estimatedCost?: number;
+  status: "pending" | "approved" | "declined" | "completed";
+  createdAt: string;
+}
+
+export interface CostBreakdown {
+  labor?: number;
+  parts?: number;
+  tax?: number;
+  discount?: number;
+  total: number;
+  currency?: string;
+}
+
+export interface JobSummary {
+  id: string;
+  jobNumber: string;
+  customerName: string;
+  vehicleInfo: string;
+  status: JobStatus;
+  priority: Priority;
+  scheduledDate?: string;
+  estimatedCost?: number;
+  technicianName?: string;
+}
+
+// Job Creation Flow
+export interface JobCreateStepData {
+  step1?: {
+    customerId?: string;
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+  };
+  step2?: {
+    vehicleId?: string;
+    vehicleMake?: string;
+    vehicleModel?: string;
+    vehicleYear?: number;
+    vehiclePlate?: string;
+  };
+  step3?: {
+    serviceTypeId?: string;
+    title?: string;
+    description?: string;
+    priority?: Priority;
+  };
+  step4?: {
+    technicianId?: string;
+    scheduledDate?: string;
+    estimatedCost?: number;
+    estimatedHours?: number;
+  };
+}
+
+// Search and Filter
+export interface SearchCategory {
+  key: string;
+  label: string;
+  placeholder: string;
+  searchFields: (keyof Job)[];
+}
+
+// Related Entities
+export interface Technician {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  specialties?: string[];
+  avatar?: string;
+  status: "active" | "inactive" | "on_leave";
+  currentJobs?: number;
+  completedJobs?: number;
+  rating?: number;
+}
+
+export interface ServiceType {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  estimatedDuration?: number;
+  estimatedCost?: number;
+  icon?: string;
+  isActive: boolean;
+}// Job Status Enums
+export type JobStatus =
+  | "pending"
+  | "assigned"
+  | "in_progress"
+  | "completed"
+  | "cancelled"
+  | "on_hold";
+
+export type Priority = "low" | "medium" | "high" | "urgent";
+
+export type DeliveryStatus =
+  | "not_started"
+  | "in_transit"
+  | "delivered"
+  | "failed";
+
+// Core Job Interface
+export interface Job {
+  id?: string;
+  jobNumber?: string;
+  customerId?: string;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  vehicleId?: string;
+  vehicleMake?: string;
+  vehicleModel?: string;
+  vehicleYear?: number;
+  vehiclePlate?: string;
+  serviceTypeId?: string;
+  serviceTypeName?: string;
+  technicianId?: string;
+  technicianName?: string;
+  status?: JobStatus;
+  priority?: Priority;
+  deliveryStatus?: DeliveryStatus;
+  title?: string;
+  description?: string;
+  estimatedCost?: number;
+  actualCost?: number;
+  estimatedHours?: number;
+  actualHours?: number;
+  scheduledDate?: string;
+  startedAt?: string;
+  completedAt?: string;
+  dueDate?: string;
+  location?: string;
+  notes?: string;
+  internalNotes?: string;
+  partsRequired?: string[];
+  attachments?: string[];
+  recommendations?: Recommendation[];
+  costBreakdown?: CostBreakdown;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
+// Supporting Interfaces
+export interface Recommendation {
+  id: string;
+  title: string;
+  description: string;
+  priority: Priority;
+  estimatedCost?: number;
+  status: "pending" | "approved" | "declined" | "completed";
+  createdAt: string;
+}
+
+export interface CostBreakdown {
+  labor?: number;
+  parts?: number;
+  tax?: number;
+  discount?: number;
+  total: number;
+  currency?: string;
+}
+
+export interface JobSummary {
+  id: string;
+  jobNumber: string;
+  customerName: string;
+  vehicleInfo: string;
+  status: JobStatus;
+  priority: Priority;
+  scheduledDate?: string;
+  estimatedCost?: number;
+  technicianName?: string;
+}
+
+// Job Creation Flow
+export interface JobCreateStepData {
+  step1?: {
+    customerId?: string;
+    customerName?: string;
+    customerPhone?: string;
+    customerEmail?: string;
+  };
+  step2?: {
+    vehicleId?: string;
+    vehicleMake?: string;
+    vehicleModel?: string;
+    vehicleYear?: number;
+    vehiclePlate?: string;
+  };
+  step3?: {
+    serviceTypeId?: string;
+    title?: string;
+    description?: string;
+    priority?: Priority;
+  };
+  step4?: {
+    technicianId?: string;
+    scheduledDate?: string;
+    estimatedCost?: number;
+    estimatedHours?: number;
+  };
+}
+
+// Search and Filter
+export interface SearchCategory {
+  key: string;
+  label: string;
+  placeholder: string;
+  searchFields: (keyof Job)[];
+}
+
+// Related Entities
+export interface Technician {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  specialties?: string[];
+  avatar?: string;
+  status: "active" | "inactive" | "on_leave";
+  currentJobs?: number;
+  completedJobs?: number;
+  rating?: number;
+}
+
+export interface ServiceType {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  estimatedDuration?: number;
+  estimatedCost?: number;
+  icon?: string;
+  isActive: boolean;
+}

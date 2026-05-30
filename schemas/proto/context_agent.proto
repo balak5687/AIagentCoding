@@ -1,0 +1,113 @@
+syntax = "proto3";
+
+package sdlc.context_agent;
+
+import "common.proto";
+
+// Output from Context Agent
+message ContextAgentOutput {
+  // Metadata
+  string agent = 1;                   // Always "context_agent"
+  common.Status status = 2;
+  int32 confidence = 3;
+
+  // Project context
+  ProjectContext backend = 4;
+  ProjectContext frontend = 5;
+
+  // Markdown content (rich context summary)
+  string markdown_body = 6;
+}
+
+message ProjectContext {
+  string name = 1;                    // e.g., "GreasyNuts Backend"
+  string path = 2;                    // Absolute path
+  string type = 3;                    // "backend" | "frontend"
+
+  // Tech stack
+  TechStack tech_stack = 4;
+
+  // Architecture
+  Architecture architecture = 5;
+
+  // File tree
+  FileTree file_tree = 6;
+
+  // Existing patterns
+  repeated Pattern patterns = 7;
+
+  // API endpoints (for backend)
+  repeated ApiEndpoint api_endpoints = 8;
+
+  // Import graph (key dependencies)
+  repeated ImportRelationship imports = 9;
+
+  // Statistics
+  ProjectStats stats = 10;
+}
+
+message TechStack {
+  string language = 1;                // e.g., "Python", "Dart"
+  string framework = 2;               // e.g., "Flask", "Flutter"
+  string database = 3;                // e.g., "DynamoDB", "PostgreSQL"
+  repeated string libraries = 4;      // Key libraries detected
+  string version = 5;                 // Language/framework version
+}
+
+message Architecture {
+  string pattern = 1;                 // e.g., "3-layer", "MVC", "Clean Architecture"
+  repeated string layers = 2;         // e.g., ["routes", "services", "repositories"]
+  repeated DirectoryRole directories = 3;
+}
+
+message DirectoryRole {
+  string path = 1;                    // e.g., "app/routes"
+  string role = 2;                    // e.g., "API routes", "Business logic"
+  int32 file_count = 3;
+}
+
+message FileTree {
+  repeated DirectoryNode directories = 1;
+  int32 total_files = 2;
+  int32 total_directories = 3;
+}
+
+message DirectoryNode {
+  string path = 1;
+  repeated string files = 2;          // Files in this directory
+  repeated string subdirectories = 3; // Subdirectory names only
+  string purpose = 4;                 // What this directory is for
+}
+
+message Pattern {
+  string name = 1;                    // e.g., "JWT Authentication"
+  string description = 2;             // How it's implemented
+  repeated string examples = 3;       // File paths showing this pattern
+  string code_snippet = 4;            // Example code (optional)
+}
+
+message ApiEndpoint {
+  string method = 1;                  // GET, POST, PUT, DELETE
+  string path = 2;                    // e.g., "/api/dashboard/kpis"
+  string handler_file = 3;            // File containing handler
+  string handler_function = 4;        // Function name
+  bool requires_auth = 5;
+  string description = 6;
+}
+
+message ImportRelationship {
+  string from_file = 1;
+  string imports = 2;                 // What it imports
+  string from_module = 3;             // Which module
+  int32 usage_count = 4;              // How often this import appears
+}
+
+message ProjectStats {
+  int32 total_files = 1;
+  int32 lines_of_code = 2;
+  int32 routes_count = 3;             // For backend
+  int32 services_count = 4;
+  int32 models_count = 5;
+  int32 widgets_count = 6;            // For frontend
+  int32 screens_count = 7;            // For frontend
+}

@@ -1,0 +1,134 @@
+metadata:
+  level: general
+  version: "1.0.0"
+  created_by: human
+  supervised_by: "system_architect"
+  approved_date: "2026-05-23"
+  last_updated: "2026-05-23"
+
+name: file_operations
+description: Fundamental file system operations for codebase manipulation
+category: general
+language: any
+framework: any
+
+ai_guidance: |
+  This playbook provides foundational capabilities for interacting with files.
+  Always verify file existence before reading. Handle errors gracefully.
+  Use appropriate file paths (absolute vs relative) based on context.
+
+operations:
+  - operation: read_file
+    description: "Read contents of a file"
+    steps:
+      - "Check if file exists"
+      - "Read file contents"
+      - "Handle encoding (UTF-8 default)"
+      - "Return content or error"
+    error_handling:
+      - FileNotFoundError: "Report file not found"
+      - PermissionError: "Report permission denied"
+      - UnicodeDecodeError: "Try different encoding or report"
+
+  - operation: write_file
+    description: "Write or update file contents"
+    steps:
+      - "Check if directory exists, create if needed"
+      - "Check file permissions"
+      - "Write content (create or overwrite)"
+      - "Verify write success"
+    safety_checks:
+      - "Never overwrite without confirmation for critical files"
+      - "Backup before overwriting important files"
+      - "Use atomic writes when possible"
+
+  - operation: create_file
+    description: "Create new file"
+    steps:
+      - "Check if file already exists"
+      - "Determine appropriate location"
+      - "Create with appropriate content"
+      - "Set appropriate permissions"
+
+  - operation: delete_file
+    description: "Delete file"
+    steps:
+      - "Verify file exists"
+      - "Confirm deletion intent"
+      - "Delete file"
+      - "Confirm deletion"
+    safety_checks:
+      - "NEVER delete files without explicit instruction"
+      - "Warn if file is important"
+      - "Provide undo information"
+
+  - operation: search_files
+    description: "Search for files by name or pattern"
+    steps:
+      - "Define search scope (directory)"
+      - "Apply file pattern matching"
+      - "Filter results"
+      - "Return matched files"
+    patterns:
+      - "*.py - Python files"
+      - "*.js, *.jsx - JavaScript files"
+      - "*.java - Java files"
+      - "test_*.py - Test files"
+
+  - operation: grep_files
+    description: "Search for content within files"
+    steps:
+      - "Define search scope"
+      - "Define search pattern (regex)"
+      - "Search file contents"
+      - "Return matches with context"
+    best_practices:
+      - "Use case-insensitive when appropriate"
+      - "Provide line numbers and context"
+      - "Handle binary files gracefully"
+
+best_practices:
+  - "Always use absolute paths in production"
+  - "Handle all file operation errors explicitly"
+  - "Use context managers (with statements) for file operations"
+  - "Verify file integrity after writes"
+  - "Log all file operations for audit"
+  - "Use appropriate file modes (r, w, a, r+, etc.)"
+
+common_pitfalls:
+  - "Not checking file existence before read"
+  - "Not handling encoding issues"
+  - "Not closing files properly"
+  - "Race conditions in concurrent file access"
+  - "Not validating file paths (security)"
+
+examples:
+  read_example:
+    python: |
+      from pathlib import Path
+
+      def read_file_safely(file_path):
+          try:
+              path = Path(file_path)
+              if not path.exists():
+                  raise FileNotFoundError(f"File not found: {file_path}")
+              with path.open('r', encoding='utf-8') as f:
+                  return f.read()
+          except Exception as e:
+              logger.error(f"Error reading {file_path}: {e}")
+              raise
+
+  write_example:
+    python: |
+      from pathlib import Path
+
+      def write_file_safely(file_path, content):
+          try:
+              path = Path(file_path)
+              path.parent.mkdir(parents=True, exist_ok=True)
+              with path.open('w', encoding='utf-8') as f:
+                  f.write(content)
+              return True
+          except Exception as e:
+              logger.error(f"Error writing {file_path}: {e}")
+              raise

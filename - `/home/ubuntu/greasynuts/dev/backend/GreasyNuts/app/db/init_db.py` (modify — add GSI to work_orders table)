@@ -1,0 +1,8 @@
+"AttributeDefinitions": [
+            {"AttributeName": "id", "AttributeType": "S"},
+            {"AttributeName": "priority", "AttributeType": "N"},
+            {"AttributeName": "due_date", "AttributeType": "S"},
+            {"AttributeName": "delivery_status", "AttributeType": "S"},
+            {"AttributeName": "assigned_technician_id", "AttributeType": "S"},
+            {"AttributeName": "created_at", "AttributeType": "S"}
+        ],

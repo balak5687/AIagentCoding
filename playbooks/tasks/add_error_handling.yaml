@@ -1,0 +1,160 @@
+name: add_error_handling
+description: Add try/catch error handling to existing code
+category: robustness
+difficulty: low
+reduces_hallucination: true
+
+pattern:
+  keywords: ["error handling", "try catch", "exception", "error"]
+  entities_required: ["target_function", "language"]
+
+steps:
+  - step: 1
+    action: "Identify function/block needing error handling"
+    output: "target_code_location"
+
+  - step: 2
+    action: "Identify language"
+    output: "language"
+    options: ["python", "javascript", "java", "go"]
+
+  - step: 3
+    action: "Identify operations that can fail"
+    deterministic: false
+    examples:
+      - "File operations"
+      - "Network requests"
+      - "Database queries"
+      - "External API calls"
+      - "Parsing/deserialization"
+
+  - step: 4
+    action: "Wrap risky operations in try/catch"
+    template: "try_catch_wrapper"
+    language_specific: true
+
+  - step: 5
+    action: "Add specific exception types"
+    template: "specific_exceptions"
+    deterministic: true
+
+  - step: 6
+    action: "Add logging on error"
+    template: "error_logging"
+    deterministic: true
+
+  - step: 7
+    action: "Add cleanup in finally block (if needed)"
+    template: "finally_block"
+    optional: true
+
+  - step: 8
+    action: "Return/raise appropriate error to caller"
+    template: "error_propagation"
+    options:
+      - "Re-raise with context"
+      - "Return error result"
+      - "Convert to domain-specific exception"
+
+templates:
+  try_catch_wrapper:
+    python: |
+      try:
+          {original_code}
+      except Exception as e:
+          logger.error(f"Error in {function_name}: {{e}}")
+          raise
+
+    javascript: |
+      try {{
+          {original_code}
+      }} catch (error) {{
+          logger.error(`Error in {function_name}: ${{error.message}}`);
+          throw error;
+      }}
+
+  specific_exceptions:
+    python: |
+      try:
+          {original_code}
+      except FileNotFoundError as e:
+          logger.error(f"File not found: {{e}}")
+          raise
+      except PermissionError as e:
+          logger.error(f"Permission denied: {{e}}")
+          raise
+      except Exception as e:
+          logger.error(f"Unexpected error: {{e}}")
+          raise
+
+  error_logging:
+    python: |
+      import logging
+      logger = logging.getLogger(__name__)
+
+      try:
+          {original_code}
+      except Exception as e:
+          logger.exception(f"Error in {function_name}")
+          raise
+
+  finally_block:
+    python: |
+      try:
+          {original_code}
+      except Exception as e:
+          logger.error(f"Error: {{e}}")
+          raise
+      finally:
+          # Cleanup code
+          {cleanup_code}
+
+  error_propagation:
+    python: |
+      try:
+          {original_code}
+      except ValueError as e:
+          # Convert to domain exception
+          raise {DomainException}(f"Invalid input: {{e}}") from e
+      except Exception as e:
+          # Unexpected error
+          raise {DomainException}(f"Operation failed: {{e}}") from e
+
+validation:
+  - "Try/catch block added"
+  - "Specific exception types caught (not just generic Exception)"
+  - "Error logged with context"
+  - "Error propagated or handled appropriately"
+  - "Resource cleanup in finally (if applicable)"
+  - "No silent failures (empty catch blocks)"
+
+anti_patterns:
+  - "Empty catch blocks (swallowing errors)"
+  - "Catching generic Exception without re-raising"
+  - "No logging of errors"
+  - "Ignoring specific exception types"
+
+example:
+  task: "Add error handling to file_reader function"
+  before: |
+    def read_config(file_path):
+        with open(file_path) as f:
+            return json.load(f)
+
+  after: |
+    import logging
+    logger = logging.getLogger(__name__)
+
+    def read_config(file_path):
+        try:
+            with open(file_path) as f:
+                return json.load(f)
+        except FileNotFoundError as e:
+            logger.error(f"Config file not found: {{file_path}}")
+            raise ConfigError(f"Cannot find config: {{file_path}}") from e
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in config: {{e}}")
+            raise ConfigError(f"Invalid config format: {{e}}") from e
+        except Exception as e:
+            logger.exception(f"Unexpected error reading config")
+            raise ConfigError(f"Failed to read config: {{e}}") from e

@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package sdlc.designer;
+
+import "common.proto";
+
+// Output from Designer Agent
+message DesignerOutput {
+  // Metadata
+  string agent = 1;                   // Always "designer"
+  common.Status status = 2;
+  int32 confidence = 3;
+
+  // Design data
+  Design design = 4;
+
+  // Markdown content (rich design document)
+  string markdown_body = 5;
+}
+
+message Design {
+  string title = 1;                   // Design title
+  string summary = 2;                 // One-paragraph summary
+
+  // Architecture
+  ArchitectureDesign architecture = 3;
+
+  // Components to implement
+  repeated common.Component components = 4;
+
+  // Implementation approach
+  ImplementationApproach approach = 5;
+
+  // Risks and mitigations
+  repeated common.Risk risks = 6;
+
+  // Technical debt introduced (if any)
+  repeated common.TechnicalDebt technical_debt = 7;
+
+  // Estimates
+  Estimates estimates = 8;
+}
+
+message ArchitectureDesign {
+  string pattern = 1;                 // Architecture pattern to follow
+  repeated string layers = 2;         // Layers involved
+  string data_flow = 3;               // How data flows through system
+  repeated Integration integrations = 4;
+}
+
+message Integration {
+  string name = 1;                    // e.g., "Backend API → Frontend Service"
+  string description = 2;
+  repeated string components_involved = 3;
+}
+
+message ImplementationApproach {
+  string strategy = 1;                // "incremental", "big-bang", "parallel"
+  repeated Phase phases = 2;          // Implementation phases
+  repeated string prerequisites = 3;  // What must exist first
+  repeated string success_criteria = 4;
+}
+
+message Phase {
+  int32 order = 1;                    // Phase number
+  string name = 2;                    // Phase name
+  string description = 3;             // What happens in this phase
+  repeated string deliverables = 4;   // What gets delivered
+}
+
+message Estimates {
+  int32 complexity_score = 1;         // 1-10 (1=trivial, 10=extremely complex)
+  int32 files_to_create = 2;
+  int32 files_to_modify = 3;
+  int32 estimated_loc = 4;            // Estimated lines of code
+  string time_estimate = 5;           // Human-readable time estimate
+}

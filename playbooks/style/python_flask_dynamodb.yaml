@@ -1,0 +1,590 @@
+metadata:
+  level: style
+  version: "1.0.0"
+  created_by: human
+  supervised_by: "backend_tech_lead"
+  approved_date: "2026-05-23"
+  last_updated: "2026-05-23"
+  project_context: "GreasyNuts ERP - Flask + DynamoDB backend"
+
+name: python_flask_dynamodb_style
+description: Flask with DynamoDB, 3-layer architecture, JWT authentication, and AWS best practices
+category: style
+language: python
+framework: flask
+database: dynamodb
+
+# Based on: Flask best practices, AWS DynamoDB patterns, GreasyNuts implementation
+
+style_rules:
+  general_python:
+    - rule: "Use 4 spaces for indentation"
+      enforcement: strict
+
+    - rule: "Line length max 100 characters"
+      enforcement: warning
+
+    - rule: "Use type hints for all function signatures"
+      enforcement: strict
+      example: |
+        from typing import Tuple, Optional, List, Dict, Any
+
+        def get_customer(customer_id: str) -> Tuple[Optional[Dict], Optional[str]]:
+            """Returns (data, error)"""
+            ...
+
+    - rule: "Import order: stdlib, third-party, local"
+      enforcement: strict
+      example: |
+        # Standard library
+        import os
+        from datetime import datetime
+        from typing import Dict, Optional
+
+        # Third-party
+        from flask import Flask, request, jsonify
+        import boto3
+        from pydantic import BaseModel
+
+        # Local
+        from app.utils.dynamodb import get_dynamodb_resource
+        from app.models.customer import Customer
+
+  flask_architecture:
+    - rule: "Use Application Factory pattern"
+      enforcement: strict
+      structure: |
+        app/
+        ├── __init__.py          # create_app() factory
+        ├── config.py            # Environment configs
+        ├── middleware/          # Auth decorators
+        ├── models/              # Pydantic models
+        ├── repositories/        # DynamoDB data access
+        ├── services/            # Business logic
+        ├── routes/              # API endpoints
+        └── utils/               # JWT, DynamoDB, responses
+
+      example: |
+        # app/__init__.py
+        def create_app(config_name='development'):
+            app = Flask(__name__)
+            app.config.from_object(config[config_name])
+
+            # Initialize extensions
+            CORS(app, origins=app.config['CORS_ORIGINS'])
+
+            # Register blueprints
+            from app.routes.auth import auth_bp
+            app.register_blueprint(auth_bp, url_prefix='/api/auth')
+
+            return app
+
+    - rule: "3-Layer Architecture: Routes → Services → Repositories"
+      enforcement: strict
+      layers: |
+        # Layer 1: Routes (HTTP handling)
+        @customers_bp.route('/', methods=['GET'])
+        @require_auth
+        def get_customers():
+            customers, error = CustomerService.get_all()
+            if error:
+                return error_response(error, 500)
+            return success_response(customers)
+
+        # Layer 2: Services (Business logic)
+        class CustomerService:
+            @staticmethod
+            def get_all() -> Tuple[List[Dict], Optional[str]]:
+                try:
+                    return CustomerRepository.get_all(), None
+                except Exception as e:
+                    logger.exception("Error fetching customers")
+                    return None, str(e)
+
+        # Layer 3: Repositories (Data access)
+        class CustomerRepository(BaseRepository):
+            table_name = 'customers'
+
+            @classmethod
+            def get_all(cls):
+                response = cls.table.scan()
+                return response.get('Items', [])
+
+  dynamodb_patterns:
+    - rule: "Use BaseRepository for common operations"
+      enforcement: strict
+      pattern: |
+        class BaseRepository:
+            table_name: str = None
+            _table = None
+
+            @classmethod
+            def table(cls):
+                if cls._table is None:
+                    dynamodb = get_dynamodb_resource()
+                    cls._table = dynamodb.Table(cls.table_name)
+                return cls._table
+
+            @classmethod
+            def create(cls, item: Dict) -> Dict:
+                item['created_at'] = datetime.utcnow().isoformat()
+                item['updated_at'] = item['created_at']
+                cls.table().put_item(Item=item)
+                return item
+
+            @classmethod
+            def get_by_id(cls, pk_name: str, pk_value: str) -> Optional[Dict]:
+                response = cls.table().get_item(Key={pk_name: pk_value})
+                return response.get('Item')
+
+            @classmethod
+            def update(cls, pk_name: str, pk_value: str, updates: Dict) -> Dict:
+                updates['updated_at'] = datetime.utcnow().isoformat()
+                # Build update expression
+                ...
+
+            @classmethod
+            def delete(cls, pk_name: str, pk_value: str) -> bool:
+                cls.table().delete_item(Key={pk_name: pk_value})
+                return True
+
+    - rule: "Use GSI (Global Secondary Index) for queries"
+      enforcement: strict
+      example: |
+        # Query by email using GSI
+        response = table.query(
+            IndexName='email-index',
+            KeyConditionExpression='email = :email',
+            ExpressionAttributeValues={':email': email}
+        )
+
+    - rule: "Handle pagination with LastEvaluatedKey"
+      enforcement: recommended
+      example: |
+        def scan_with_pagination(table, limit=100):
+            items = []
+            last_key = None
+
+            while True:
+                if last_key:
+                    response = table.scan(
+                        Limit=limit,
+                        ExclusiveStartKey=last_key
+                    )
+                else:
+                    response = table.scan(Limit=limit)
+
+                items.extend(response.get('Items', []))
+                last_key = response.get('LastEvaluatedKey')
+
+                if not last_key:
+                    break
+
+            return items
+
+    - rule: "Use batch operations for efficiency"
+      enforcement: recommended
+      example: |
+        # Batch write
+        with table.batch_writer() as batch:
+            for item in items:
+                batch.put_item(Item=item)
+
+        # Batch get
+        response = dynamodb.batch_get_item(
+            RequestItems={
+                'customers': {
+                    'Keys': [{'customer_id': id} for id in customer_ids]
+                }
+            }
+        )
+
+  authentication:
+    - rule: "Use JWT with HS256 algorithm"
+      enforcement: strict
+      setup: |
+        # app/utils/jwt_utils.py
+        import jwt
+        from datetime import datetime, timedelta
+
+        def create_access_token(user_id: str, role: str) -> str:
+            payload = {
+                'user_id': user_id,
+                'role': role,
+                'exp': datetime.utcnow() + timedelta(hours=1),
+                'iat': datetime.utcnow()
+            }
+            return jwt.encode(
+                payload,
+                current_app.config['JWT_SECRET_KEY'],
+                algorithm='HS256'
+            )
+
+        def decode_token(token: str) -> Optional[Dict]:
+            try:
+                return jwt.decode(
+                    token,
+                    current_app.config['JWT_SECRET_KEY'],
+                    algorithms=['HS256']
+                )
+            except jwt.ExpiredSignatureError:
+                return None
+            except jwt.InvalidTokenError:
+                return None
+
+    - rule: "Use bcrypt for password hashing"
+      enforcement: strict
+      example: |
+        import bcrypt
+
+        def hash_password(password: str) -> str:
+            salt = bcrypt.gensalt()
+            return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
+
+        def verify_password(password: str, hashed: str) -> bool:
+            return bcrypt.checkpw(
+                password.encode('utf-8'),
+                hashed.encode('utf-8')
+            )
+
+    - rule: "Use middleware decorators for auth"
+      enforcement: strict
+      pattern: |
+        # app/middleware/auth.py
+        from functools import wraps
+
+        def require_auth(f):
+            @wraps(f)
+            def decorated_function(*args, **kwargs):
+                token = request.headers.get('Authorization', '').replace('Bearer ', '')
+                if not token:
+                    return error_response('Missing token', 401)
+
+                payload = decode_token(token)
+                if not payload:
+                    return error_response('Invalid token', 401)
+
+                request.user = payload  # Attach user to request
+                return f(*args, **kwargs)
+            return decorated_function
+
+        def require_role(*allowed_roles):
+            def decorator(f):
+                @wraps(f)
+                @require_auth
+                def decorated_function(*args, **kwargs):
+                    if request.user['role'] not in allowed_roles:
+                        return error_response('Insufficient permissions', 403)
+                    return f(*args, **kwargs)
+                return decorated_function
+            return decorator
+
+        # Usage
+        @require_auth
+        def get_profile():
+            ...
+
+        @require_role('admin', 'technician')
+        def delete_customer():
+            ...
+
+  pydantic_models:
+    - rule: "Use Pydantic for request/response validation"
+      enforcement: strict
+      pattern: |
+        from pydantic import BaseModel, Field, validator
+
+        class CustomerBase(BaseModel):
+            name: str = Field(..., min_length=1, max_length=100)
+            email: str = Field(..., regex=r'^[\w\.-]+@[\w\.-]+\.\w+$')
+            phone: Optional[str] = None
+
+            @validator('phone')
+            def validate_phone(cls, v):
+                if v and not v.replace('-', '').replace(' ', '').isdigit():
+                    raise ValueError('Invalid phone number')
+                return v
+
+        class CustomerCreate(CustomerBase):
+            pass
+
+        class CustomerUpdate(CustomerBase):
+            name: Optional[str] = None
+            email: Optional[str] = None
+
+        class CustomerResponse(CustomerBase):
+            customer_id: str
+            created_at: str
+            updated_at: str
+
+    - rule: "Validate request data in routes"
+      enforcement: strict
+      example: |
+        @customers_bp.route('/', methods=['POST'])
+        @require_auth
+        def create_customer():
+            try:
+                customer_data = CustomerCreate(**request.json)
+            except ValidationError as e:
+                return error_response(str(e), 400)
+
+            customer, error = CustomerService.create(customer_data.dict())
+            if error:
+                return error_response(error, 500)
+            return success_response(customer, 201)
+
+  response_format:
+    - rule: "Consistent response format"
+      enforcement: strict
+      pattern: |
+        # app/utils/responses.py
+        def success_response(data=None, status_code=200):
+            return jsonify({
+                'success': True,
+                'data': data,
+                'error': None
+            }), status_code
+
+        def error_response(message: str, status_code=400):
+            return jsonify({
+                'success': False,
+                'data': None,
+                'error': message
+            }), status_code
+
+  error_handling:
+    - rule: "Use try-except in services"
+      enforcement: strict
+      pattern: |
+        class CustomerService:
+            @staticmethod
+            def create(customer_data: Dict) -> Tuple[Optional[Dict], Optional[str]]:
+                try:
+                    # Generate ID
+                    customer_data['customer_id'] = str(uuid.uuid4())
+
+                    # Create in repository
+                    customer = CustomerRepository.create(customer_data)
+
+                    return customer, None
+                except Exception as e:
+                    logger.exception("Error creating customer")
+                    return None, f"Failed to create customer: {str(e)}"
+
+    - rule: "Log all exceptions"
+      enforcement: strict
+      example: |
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        try:
+            ...
+        except Exception as e:
+            logger.exception(f"Error in {operation_name}")
+            return None, str(e)
+
+  configuration:
+    - rule: "Environment-based configuration"
+      enforcement: strict
+      pattern: |
+        # app/config.py
+        import os
+
+        class Config:
+            SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
+            JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or SECRET_KEY
+            DYNAMODB_ENDPOINT = os.environ.get('DYNAMODB_ENDPOINT')
+            AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+
+        class DevelopmentConfig(Config):
+            DEBUG = True
+            DYNAMODB_ENDPOINT = 'http://dynamodb-local:8000'
+
+        class ProductionConfig(Config):
+            DEBUG = False
+            DYNAMODB_ENDPOINT = None  # Use AWS
+
+        config = {
+            'development': DevelopmentConfig,
+            'production': ProductionConfig
+        }
+
+    - rule: "Never hardcode secrets"
+      enforcement: critical
+      requirement: "Use environment variables for all sensitive data"
+
+  cors_setup:
+    - rule: "Configure CORS explicitly"
+      enforcement: strict
+      example: |
+        from flask_cors import CORS
+
+        CORS(app,
+             origins=['http://localhost:3000', 'https://yourapp.com'],
+             methods=['GET', 'POST', 'PUT', 'DELETE'],
+             allow_headers=['Content-Type', 'Authorization'])
+
+  production_server:
+    - rule: "Use Gunicorn for production"
+      enforcement: strict
+      setup: |
+        # gunicorn.conf.py
+        bind = "0.0.0.0:5000"
+        workers = 4
+        worker_class = "sync"
+        timeout = 120
+        keepalive = 5
+
+        # Command
+        gunicorn -c gunicorn.conf.py "app:create_app()"
+
+  health_checks:
+    - rule: "Implement health check endpoint"
+      enforcement: required
+      example: |
+        @app.route('/api/health', methods=['GET'])
+        def health_check():
+            try:
+                # Check DynamoDB connection
+                dynamodb = get_dynamodb_resource()
+                dynamodb.meta.client.list_tables()
+
+                return success_response({
+                    'status': 'healthy',
+                    'database': 'connected',
+                    'timestamp': datetime.utcnow().isoformat()
+                })
+            except Exception as e:
+                return error_response(f'Unhealthy: {e}', 503)
+
+security_best_practices:
+  password_policy:
+    - "Minimum 8 characters"
+    - "At least one uppercase letter"
+    - "At least one lowercase letter"
+    - "At least one digit"
+    - "Bcrypt hashing with salt"
+
+  jwt_configuration:
+    - "HS256 algorithm"
+    - "1-hour expiration"
+    - "Refresh token support"
+    - "Secure secret key (32+ characters)"
+
+  input_validation:
+    - "Pydantic validation on all requests"
+    - "SQL injection not applicable (DynamoDB)"
+    - "Sanitize user inputs"
+    - "Validate file uploads"
+
+  cors:
+    - "Whitelist specific origins"
+    - "Limit HTTP methods"
+    - "Explicit headers allowed"
+
+  rate_limiting:
+    - "Implement on auth endpoints"
+    - "Use Flask-Limiter or similar"
+    - "Example: 5 login attempts per minute"
+
+  logging:
+    - "Log all authentication attempts"
+    - "Log all errors with stack traces"
+    - "Never log sensitive data (passwords, tokens)"
+    - "Use structured logging (JSON format)"
+
+production_readiness:
+  - check: "Environment variables configured"
+    requirement: ".env file with all secrets"
+
+  - check: "Database tables created"
+    requirement: "Run init_db.py script"
+
+  - check: "Health check endpoint"
+    requirement: "/api/health returns 200"
+
+  - check: "CORS configured"
+    requirement: "Only allow production origins"
+
+  - check: "Logging configured"
+    requirement: "File logging + stdout"
+
+  - check: "Error handling comprehensive"
+    requirement: "All routes have try-catch"
+
+  - check: "API documentation"
+    requirement: "Swagger/OpenAPI (recommended)"
+
+  - check: "Rate limiting"
+    requirement: "On auth endpoints at minimum"
+
+  - check: "HTTPS enforcement"
+    requirement: "Nginx SSL termination"
+
+  - check: "Gunicorn workers tuned"
+    requirement: "workers = (2 * CPU cores) + 1"
+
+deployment_checklist:
+  aws_setup:
+    - "DynamoDB tables created in AWS"
+    - "IAM role with DynamoDB permissions"
+    - "AWS credentials configured"
+    - "VPC and security groups configured"
+
+  environment_variables:
+    - "SECRET_KEY (32+ characters)"
+    - "JWT_SECRET_KEY (different from SECRET_KEY)"
+    - "AWS_ACCESS_KEY_ID"
+    - "AWS_SECRET_ACCESS_KEY"
+    - "AWS_REGION"
+    - "DYNAMODB_ENDPOINT (blank for AWS)"
+    - "CORS_ORIGINS (production URLs)"
+
+  docker_deployment:
+    - "Dockerfile optimized (multi-stage build)"
+    - "docker-compose.yml for services"
+    - "Nginx reverse proxy"
+    - "SSL certificates installed"
+
+  monitoring:
+    - "CloudWatch logs (AWS)"
+    - "Application logs to file"
+    - "Error tracking (Sentry recommended)"
+    - "Performance monitoring (APM)"
+
+human_review_required:
+  - "Authentication logic changes"
+  - "Database schema modifications"
+  - "New API endpoints"
+  - "Security-related code"
+  - "Production configuration"
+  - "AWS permissions changes"
+
+anti_patterns:
+  - pattern: "Mixing business logic in routes"
+    problem: "Hard to test, violates separation of concerns"
+    solution: "Move logic to services layer"
+
+  - pattern: "Using scan() without filters on large tables"
+    problem: "Performance issues, high read costs"
+    solution: "Use query() with GSI or add filters"
+
+  - pattern: "Storing secrets in code"
+    problem: "Security risk"
+    solution: "Environment variables or AWS Secrets Manager"
+
+  - pattern: "Not using connection pooling"
+    problem: "Inefficient resource usage"
+    solution: "Reuse DynamoDB resource/client"
+
+  - pattern: "Returning raw exceptions to client"
+    problem: "Exposes internal details, security risk"
+    solution: "Return generic error messages"
+
+references:
+  - "Flask Documentation: https://flask.palletsprojects.com/"
+  - "DynamoDB Best Practices: https://docs.aws.amazon.com/dynamodb/latest/developerguide/best-practices.html"
+  - "Boto3 Documentation: https://boto3.amazonaws.com/v1/documentation/api/latest/index.html"
+  - "Pydantic Documentation: https://docs.pydantic.dev/"
+  - "GreasyNuts Implementation: /home/ubuntu/greasynuts/dev/backend"

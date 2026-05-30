@@ -1,0 +1,701 @@
+metadata:
+  level: task
+  version: "1.0.0"
+  created_by: human
+  supervised_by: "ui_ux_lead"
+  approved_date: "2026-05-23"
+  last_updated: "2026-05-23"
+  project_context: "GreasyNuts ERP - Modern UI/UX patterns"
+
+name: modern_ui_ux_patterns
+description: Modern UI/UX patterns for ERP/dashboard applications using Material Design 3
+category: ui_ux
+language: dart
+framework: flutter
+
+# Based on: Material Design 3, Modern Dashboard UX, GreasyNuts implementation
+
+ai_guidance: |
+  These patterns create intuitive, responsive, and modern ERP interfaces.
+  Focus on information density, clear hierarchy, and user efficiency.
+  All patterns should work across mobile, tablet, and desktop.
+
+patterns:
+  dashboard_layout:
+    description: "Main dashboard with stats, charts, and quick actions"
+    components:
+      - "Stat cards (4-6 key metrics)"
+      - "Charts (line, bar, pie)"
+      - "Quick action buttons"
+      - "Recent activity feed"
+      - "Alerts/notifications"
+
+    responsive_grid:
+      mobile: "1 column, stacked cards"
+      tablet: "2 columns"
+      desktop: "4 columns for stats, 2-3 for charts"
+
+    example: |
+      // Dashboard Screen
+      class DashboardScreen extends StatelessWidget {
+        @override
+        Widget build(BuildContext context) {
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              final columns = constraints.maxWidth > 1200 ? 4 :
+                             constraints.maxWidth > 768 ? 2 : 1;
+
+              return SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Text('Dashboard',
+                      style: Theme.of(context).textTheme.headlineLarge),
+                    const SizedBox(height: 24),
+
+                    // Stat Cards Grid
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: columns,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 2,
+                      children: [
+                        StatCard(
+                          title: 'Revenue',
+                          value: '\$12,345',
+                          change: '+12%',
+                          icon: Icons.attach_money,
+                          color: Colors.green,
+                        ),
+                        StatCard(
+                          title: 'Work Orders',
+                          value: '42',
+                          change: '+5',
+                          icon: Icons.assignment,
+                        ),
+                        // ... more stat cards
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Charts Section
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 2,
+                          child: RevenueChart(),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: WorkOrdersPieChart(),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        }
+      }
+
+  stat_card:
+    description: "Card displaying a single metric with trend"
+    features:
+      - "Large primary value"
+      - "Trend indicator (up/down arrow)"
+      - "Percentage change"
+      - "Icon representing metric"
+      - "Subtle background color"
+
+    example: |
+      class StatCard extends StatelessWidget {
+        final String title;
+        final String value;
+        final String? change;
+        final IconData icon;
+        final Color? color;
+
+        const StatCard({
+          required this.title,
+          required this.value,
+          this.change,
+          required this.icon,
+          this.color,
+        });
+
+        @override
+        Widget build(BuildContext context) {
+          final theme = Theme.of(context);
+          final cardColor = color?.withOpacity(0.1) ??
+                           theme.colorScheme.surfaceVariant;
+
+          return Card(
+            color: cardColor,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(title,
+                        style: theme.textTheme.titleMedium),
+                      Icon(icon, color: color, size: 24),
+                    ],
+                  ),
+                  Text(value,
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    )),
+                  if (change != null)
+                    Row(
+                      children: [
+                        Icon(
+                          change!.startsWith('+')
+                              ? Icons.trending_up
+                              : Icons.trending_down,
+                          size: 16,
+                          color: change!.startsWith('+')
+                              ? Colors.green
+                              : Colors.red,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(change!,
+                          style: theme.textTheme.bodySmall),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          );
+        }
+      }
+
+  data_table:
+    description: "Rich data table with search, sort, pagination"
+    features:
+      - "Column headers with sort indicators"
+      - "Row hover effects"
+      - "Action buttons per row"
+      - "Bulk selection checkboxes"
+      - "Pagination controls"
+      - "Empty state handling"
+      - "Loading state"
+
+    example: |
+      class DataTableWidget extends StatefulWidget {
+        final List<Customer> data;
+        final Function(Customer) onEdit;
+        final Function(Customer) onDelete;
+
+        @override
+        State<DataTableWidget> createState() => _DataTableWidgetState();
+      }
+
+      class _DataTableWidgetState extends State<DataTableWidget> {
+        int _sortColumnIndex = 0;
+        bool _sortAscending = true;
+        List<Customer> _sortedData = [];
+
+        @override
+        void initState() {
+          super.initState();
+          _sortedData = List.from(widget.data);
+        }
+
+        void _sort<T>(Comparable<T> Function(Customer) getField, int columnIndex, bool ascending) {
+          setState(() {
+            _sortColumnIndex = columnIndex;
+            _sortAscending = ascending;
+            _sortedData.sort((a, b) {
+              final aValue = getField(a);
+              final bValue = getField(b);
+              return ascending
+                  ? Comparable.compare(aValue, bValue)
+                  : Comparable.compare(bValue, aValue);
+            });
+          });
+        }
+
+        @override
+        Widget build(BuildContext context) {
+          return Card(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                sortColumnIndex: _sortColumnIndex,
+                sortAscending: _sortAscending,
+                columns: [
+                  DataColumn(
+                    label: const Text('Name'),
+                    onSort: (columnIndex, ascending) =>
+                        _sort((c) => c.name, columnIndex, ascending),
+                  ),
+                  DataColumn(
+                    label: const Text('Email'),
+                    onSort: (columnIndex, ascending) =>
+                        _sort((c) => c.email, columnIndex, ascending),
+                  ),
+                  DataColumn(
+                    label: const Text('Phone'),
+                  ),
+                  const DataColumn(
+                    label: Text('Actions'),
+                    numeric: false,
+                  ),
+                ],
+                rows: _sortedData.map((customer) {
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(customer.name)),
+                      DataCell(Text(customer.email)),
+                      DataCell(Text(customer.phone ?? '-')),
+                      DataCell(
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.edit, size: 18),
+                              onPressed: () => widget.onEdit(customer),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete, size: 18),
+                              color: Colors.red,
+                              onPressed: () => widget.onDelete(customer),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          );
+        }
+      }
+
+  collapsible_sidebar:
+    description: "Responsive sidebar navigation with collapse functionality"
+    states:
+      - "Expanded: 240px width, full labels"
+      - "Collapsed: 72px width, icons only"
+      - "Mobile: Drawer overlay"
+
+    features:
+      - "Smooth animation (200ms)"
+      - "Persistent state (SharedPreferences)"
+      - "Role-based menu items"
+      - "Active route highlighting"
+      - "Module grouping"
+
+    example: |
+      class CollapsibleSidebar extends StatefulWidget {
+        final bool collapsed;
+        final Function(bool) onToggle;
+
+        @override
+        Widget build(BuildContext context) {
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: collapsed ? 72 : 240,
+            color: Theme.of(context).colorScheme.surfaceVariant,
+            child: Column(
+              children: [
+                // Logo/Header
+                Container(
+                  height: 64,
+                  padding: const EdgeInsets.all(16),
+                  child: collapsed
+                      ? const Icon(Icons.business)
+                      : Text('GreasyNuts',
+                          style: Theme.of(context).textTheme.titleLarge),
+                ),
+
+                // Toggle Button
+                IconButton(
+                  icon: Icon(collapsed
+                      ? Icons.chevron_right
+                      : Icons.chevron_left),
+                  onPressed: () => onToggle(!collapsed),
+                ),
+
+                const Divider(),
+
+                // Navigation Items
+                Expanded(
+                  child: ListView(
+                    children: [
+                      _buildNavItem(
+                        icon: Icons.dashboard,
+                        label: 'Dashboard',
+                        route: '/dashboard',
+                      ),
+                      _buildNavItem(
+                        icon: Icons.inventory,
+                        label: 'Inventory',
+                        route: '/inventory',
+                      ),
+                      // ... more items
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        Widget _buildNavItem({
+          required IconData icon,
+          required String label,
+          required String route,
+        }) {
+          final isActive = ModalRoute.of(context)?.settings.name == route;
+
+          return ListTile(
+            leading: Icon(icon),
+            title: collapsed ? null : Text(label),
+            selected: isActive,
+            onTap: () => Navigator.pushNamed(context, route),
+          );
+        }
+      }
+
+  form_layout:
+    description: "Card-based form with sections and validation"
+    features:
+      - "Grouped fields in sections"
+      - "Inline validation"
+      - "Required field indicators"
+      - "Save/Cancel actions"
+      - "Loading state on submit"
+      - "Error display"
+
+    example: |
+      class CustomerForm extends StatefulWidget {
+        @override
+        State<CustomerForm> createState() => _CustomerFormState();
+      }
+
+      class _CustomerFormState extends State<CustomerForm> {
+        final _formKey = GlobalKey<FormState>();
+        final _nameController = TextEditingController();
+        final _emailController = TextEditingController();
+        bool _isLoading = false;
+
+        Future<void> _submit() async {
+          if (!_formKey.currentState!.validate()) return;
+
+          setState(() => _isLoading = true);
+          try {
+            await CustomerService.create(Customer(
+              name: _nameController.text,
+              email: _emailController.text,
+            ));
+            Navigator.pop(context);
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Error: $e')),
+            );
+          } finally {
+            setState(() => _isLoading = false);
+          }
+        }
+
+        @override
+        Widget build(BuildContext context) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Customer Information',
+                      style: Theme.of(context).textTheme.headlineSmall),
+                    const SizedBox(height: 24),
+
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Name *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        labelText: 'Email *',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) return 'Required';
+                        if (!value!.contains('@')) return 'Invalid email';
+                        return null;
+                      },
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: _isLoading ? null : () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _isLoading ? null : _submit,
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Text('Save'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+      }
+
+  search_filter_bar:
+    description: "Top bar with search and filter controls"
+    features:
+      - "Search input with debounce"
+      - "Filter dropdowns"
+      - "Clear filters button"
+      - "Active filter count badge"
+
+    example: |
+      class SearchFilterBar extends StatelessWidget {
+        final String searchQuery;
+        final Function(String) onSearch;
+        final Function() onFilter;
+
+        @override
+        Widget build(BuildContext context) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onChanged: onSearch,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    icon: const Icon(Icons.filter_list),
+                    onPressed: onFilter,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: () {}, // Refresh action
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      }
+
+  empty_state:
+    description: "Friendly empty state with call-to-action"
+    example: |
+      class EmptyState extends StatelessWidget {
+        final IconData icon;
+        final String title;
+        final String message;
+        final String? actionLabel;
+        final VoidCallback? onAction;
+
+        @override
+        Widget build(BuildContext context) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text(title,
+                  style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 8),
+                Text(message,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center),
+                if (actionLabel != null && onAction != null) ...[
+                  const SizedBox(height: 24),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: Text(actionLabel!),
+                    onPressed: onAction,
+                  ),
+                ],
+              ],
+            ),
+          );
+        }
+      }
+
+  loading_skeleton:
+    description: "Skeleton loading placeholder"
+    usage: "Show while data loads to improve perceived performance"
+    example: |
+      class SkeletonCard extends StatelessWidget {
+        @override
+        Widget build(BuildContext context) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 100,
+                    height: 16,
+                    color: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    height: 12,
+                    color: Colors.grey[300],
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      }
+
+  breadcrumb_navigation:
+    description: "Breadcrumb trail for deep navigation"
+    example: |
+      class Breadcrumbs extends StatelessWidget {
+        final List<String> path;
+
+        @override
+        Widget build(BuildContext context) {
+          return Row(
+            children: [
+              for (int i = 0; i < path.length; i++) ...[
+                if (i > 0) const Icon(Icons.chevron_right, size: 16),
+                Text(path[i],
+                  style: i == path.length - 1
+                      ? Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold)
+                      : Theme.of(context).textTheme.bodyMedium),
+              ],
+            ],
+          );
+        }
+      }
+
+design_principles:
+  - principle: "Information Density"
+    guidance: "Show relevant data without overwhelming users"
+    example: "Dashboard shows 4-6 key metrics, not 20"
+
+  - principle: "Clear Hierarchy"
+    guidance: "Use typography and spacing to create visual hierarchy"
+    levels: "H1: Page title, H2: Sections, Body: Content"
+
+  - principle: "Consistent Spacing"
+    guidance: "Use 8px grid system"
+    scale: "4, 8, 12, 16, 24, 32, 48, 64"
+
+  - principle: "Action Affordance"
+    guidance: "Make interactive elements obvious"
+    examples: ["Buttons have elevation", "Links are underlined/colored", "Cards are clickable"]
+
+  - principle: "Progressive Disclosure"
+    guidance: "Show details on demand, don't overwhelm"
+    pattern: "Overview → Details → Edit"
+
+  - principle: "Responsive First"
+    guidance: "Design for mobile, enhance for desktop"
+    breakpoints: "Mobile: 0-768px, Tablet: 768-1024px, Desktop: 1024px+"
+
+color_system:
+  primary: "#2196F3 (Blue)"
+  secondary: "#FF9800 (Orange)"
+  success: "#4CAF50 (Green)"
+  error: "#F44336 (Red)"
+  warning: "#FFC107 (Amber)"
+  info: "#2196F3 (Blue)"
+
+  backgrounds:
+    - "Surface: White (#FFFFFF)"
+    - "Background: Light Gray (#F5F5F5)"
+    - "Card: White with elevation"
+
+  text:
+    - "Primary: rgba(0,0,0,0.87)"
+    - "Secondary: rgba(0,0,0,0.60)"
+    - "Disabled: rgba(0,0,0,0.38)"
+
+typography:
+  font_family: "Inter (Google Fonts)"
+  scale:
+    - "Display: 57px / 400 (Titles)"
+    - "Headline Large: 32px / 400 (Page headers)"
+    - "Headline Medium: 28px / 400 (Section headers)"
+    - "Title Large: 22px / 400 (Card titles)"
+    - "Body Large: 16px / 400 (Main content)"
+    - "Body Medium: 14px / 500 (Labels)"
+    - "Label Small: 11px / 500 (Captions)"
+
+accessibility:
+  - "Color contrast ratio ≥ 4.5:1 for text"
+  - "Touch targets ≥ 48x48px"
+  - "Semantic labels for screen readers"
+  - "Keyboard navigation support"
+  - "Focus indicators visible"
+
+performance:
+  - "Use const constructors"
+  - "ListView.builder for long lists"
+  - "Image optimization and caching"
+  - "Lazy loading for tabs/modules"
+  - "Avoid unnecessary rebuilds"
+
+human_review_required:
+  - "New design patterns"
+  - "Color scheme changes"
+  - "Navigation structure changes"
+  - "Accessibility compliance"
+
+references:
+  - "Material Design 3: https://m3.material.io/"
+  - "Flutter UX Guidelines: https://flutter.dev/docs/development/ui/design"
+  - "WCAG Accessibility: https://www.w3.org/WAI/WCAG21/quickref/"
+  - "GreasyNuts Implementation: /home/ubuntu/greasynuts/dev/frontend"

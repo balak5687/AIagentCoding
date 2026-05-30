@@ -1,0 +1,72 @@
+version: '1.0'
+project: GreasyNuts
+testIssue: 3
+createdAt: '2026-05-24T06:53:13.745080Z'
+lastIndexed: '2026-05-28T17:02:53.482592Z'
+paths:
+  backend: /home/ubuntu/greasynuts/dev/backend/GreasyNuts
+  react: /home/ubuntu/greasynuts/dev/GreasyNutsReact
+  branch: main
+knowledgeBases:
+  codingBrain:
+    id: greasynuts-codebase
+    name: GreasyNuts Codebase
+    indexType: fast
+    source: .project-brain/sources/coding-brain
+    storagePath: .project-brain/knowledge-bases/coding-brain/greasynuts-codebase
+    fileCount: 2235
+    chunkCount: 2235
+    autoUpdate: true
+    formats:
+    - py
+    - dart
+    - yaml
+    - json
+    - md
+  functionalityBrain:
+    id: greasynuts-domain
+    name: GreasyNuts Domain Knowledge
+    indexType: best
+    source: .project-brain/sources/functionality-brain
+    storagePath: .project-brain/knowledge-bases/functionality-brain/greasynuts-domain
+    fileCount: 6
+    chunkCount: 138
+    autoUpdate: true
+    embeddingModel: all-minilm-l6-v2
+    embeddingDimension: 384
+agents:
+  designer:
+    config: .project-brain/agents/designer.json
+    knowledgeBases:
+    - functionalityBrain
+    - codingBrain
+  contextAgent:
+    config: .project-brain/agents/context-agent.json
+    knowledgeBases:
+    - codingBrain
+  planner:
+    config: .project-brain/agents/planner.json
+    knowledgeBases:
+    - functionalityBrain
+  coder:
+    config: .project-brain/agents/coder.json
+    knowledgeBases:
+    - codingBrain
+  reviewer:
+    config: .project-brain/agents/reviewer.json
+    knowledgeBases:
+    - codingBrain
+lsp:
+  python:
+    server: pyright
+    command: pyright-langserver
+    args:
+    - --stdio
+    enabled: true
+  dart:
+    server: dart-analysis-server
+    command: dart
+    args:
+    - language-server
+    - --protocol=lsp
+    enabled: false

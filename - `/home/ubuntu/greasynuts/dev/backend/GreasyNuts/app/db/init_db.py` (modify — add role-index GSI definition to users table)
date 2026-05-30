@@ -1,0 +1,29 @@
+"users": {
+        "AttributeDefinitions": [
+            {"AttributeName": "user_id", "AttributeType": "S"},
+            {"AttributeName": "email", "AttributeType": "S"},
+            {"AttributeName": "role", "AttributeType": "S"},
+        ],
+        "KeySchema": [
+            {"AttributeName": "user_id", "KeyType": "HASH"},  # Partition key
+        ],
+        "GlobalSecondaryIndexes": [
+            {
+                "IndexName": "email-index",
+                "KeySchema": [
+                    {"AttributeName": "email", "KeyType": "HASH"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            },
+            {
+                "IndexName": "role-index",
+                "KeySchema": [
+                    {"AttributeName": "role", "KeyType": "HASH"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            }
+        ],
+        "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+    },

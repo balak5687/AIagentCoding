@@ -1,0 +1,53 @@
+from datetime import datetime, timezone
+from decimal import Decimal
+from enum import Enum
+from typing import Optional, List
+from pydantic import BaseModel, Field, ConfigDict
+
+
+class ServiceCategory(str, Enum):
+    """Service category enumeration compatible with DynamoDB."""
+    PREVENTIVE_MAINTENANCE = "PREVENTIVE_MAINTENANCE"
+    REPAIR = "REPAIR"
+    INSPECTION = "INSPECTION"
+    EMERGENCY = "EMERGENCY"
+    UPGRADE = "UPGRADE"
+
+
+class ServiceType(BaseModel):
+    """
+    ServiceType model representing a standardized service offering.
+    
+    Attributes:
+        service_type_id: Unique identifier (UUID)
+        name: Service name (e.g., "Oil Change", "Brake Inspection")
+        category: Service category enum
+        standard_duration_hours: Expected duration in hours
+        base_labor_price: Base labor cost (Decimal for precision)
+        required_parts: List of part IDs typically needed
+        maintenance_interval_km: Recommended interval in kilometers (optional)
+        maintenance_interval_months: Recommended interval in months (optional)
+        is_active: Whether this service type is currently offered
+        created_at: Timestamp of creation (UTC)
+        updated_at: Timestamp of last update (UTC)
+    """
+    
+    service_type_id: str = Field(..., description="Unique service type identifier")
+    name: str = Field(..., min_length=1, max_length=200, description="Service name")
+    category: ServiceCategory = Field(..., description="Service category")
+    standard_duration_hours: float = Field(..., gt=0, description="Standard duration in hours")
+    base_labor_price: Decimal = Field(..., gt=0, description="Base labor price")
+    required_parts: List[str] = Field(default_factory=list, description="List of required part IDs")
+    maintenance_interval_km: Optional[int] = Field(None, gt=0, description="Maintenance interval in km")
+    maintenance_interval_months: Optional[int] = Field(None, gt=0, description="Maintenance interval in months")
+    is_active: bool = Field(default=True, description="Whether service type is active")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Creation timestamp (auto-set on creation, never modified)")
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Last update timestamp")
+
+    model_config = ConfigDict(
+        json_encoders={
+            Decimal: float  # Serialize Decimal as float for JSON
+        },
+        use_enum_values=True,  # Serialize enum as string value for DynamoDB
+        validate_assignment=True
+    )

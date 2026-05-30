@@ -1,0 +1,253 @@
+name: add_crud_endpoint
+description: Add REST API CRUD endpoint (Create, Read, Update, Delete)
+category: api
+difficulty: low
+reduces_hallucination: true
+
+# Pattern matching
+pattern:
+  keywords: ["crud", "rest api", "endpoint", "create read update delete"]
+  entities_required: ["model_name", "framework"]
+
+# Deterministic steps
+steps:
+  - step: 1
+    action: "Identify the model/entity name"
+    output: "model_name"
+    example: "User, Product, Order"
+
+  - step: 2
+    action: "Identify the web framework"
+    output: "framework"
+    options: ["FastAPI", "Flask", "Django", "Express"]
+
+  - step: 3
+    action: "Locate or create routes file"
+    deterministic: true
+    patterns:
+      FastAPI: "app/routes/{model_name_lower}.py"
+      Flask: "app/routes/{model_name_lower}.py"
+      Django: "app/views/{model_name_lower}.py"
+      Express: "routes/{model_name_lower}.js"
+
+  - step: 4
+    action: "Add CREATE endpoint"
+    template: "create_endpoint"
+    validation:
+      - "POST method defined"
+      - "Request body validation"
+      - "Error handling present"
+
+  - step: 5
+    action: "Add READ (list) endpoint"
+    template: "read_list_endpoint"
+    validation:
+      - "GET method defined"
+      - "Pagination support"
+      - "Filter support (optional)"
+
+  - step: 6
+    action: "Add READ (single) endpoint"
+    template: "read_single_endpoint"
+    validation:
+      - "GET method with ID parameter"
+      - "404 handling for not found"
+
+  - step: 7
+    action: "Add UPDATE endpoint"
+    template: "update_endpoint"
+    validation:
+      - "PUT or PATCH method"
+      - "ID parameter"
+      - "404 handling"
+      - "Request body validation"
+
+  - step: 8
+    action: "Add DELETE endpoint"
+    template: "delete_endpoint"
+    validation:
+      - "DELETE method"
+      - "ID parameter"
+      - "404 handling"
+
+  - step: 9
+    action: "Register routes with app"
+    template: "register_routes"
+    framework_specific: true
+
+  - step: 10
+    action: "Add docstrings/comments"
+    deterministic: true
+    include:
+      - "Endpoint purpose"
+      - "Parameters"
+      - "Return values"
+      - "Error codes"
+
+# Code templates
+templates:
+  create_endpoint:
+    FastAPI: |
+      @router.post("/{model_name_lower}s", response_model={model_name}Response, status_code=201)
+      async def create_{model_name_lower}(
+          {model_name_lower}: {model_name}Create,
+          db: Session = Depends(get_db)
+      ):
+          """
+          Create a new {model_name}.
+
+          Args:
+              {model_name_lower}: {model_name} data
+
+          Returns:
+              Created {model_name} object
+
+          Raises:
+              400: Invalid input
+              500: Server error
+          """
+          try:
+              db_{model_name_lower} = {model_name}(**{model_name_lower}.dict())
+              db.add(db_{model_name_lower})
+              db.commit()
+              db.refresh(db_{model_name_lower})
+              return db_{model_name_lower}
+          except Exception as e:
+              db.rollback()
+              raise HTTPException(status_code=500, detail=str(e))
+
+    Flask: |
+      @bp.route('/{model_name_lower}s', methods=['POST'])
+      def create_{model_name_lower}():
+          """Create a new {model_name}"""
+          try:
+              data = request.get_json()
+              {model_name_lower} = {model_name}(**data)
+              db.session.add({model_name_lower})
+              db.session.commit()
+              return jsonify({model_name_lower}.to_dict()), 201
+          except Exception as e:
+              db.session.rollback()
+              return jsonify({{"error": str(e)}}), 400
+
+  read_list_endpoint:
+    FastAPI: |
+      @router.get("/{model_name_lower}s", response_model=List[{model_name}Response])
+      async def list_{model_name_lower}s(
+          skip: int = 0,
+          limit: int = 100,
+          db: Session = Depends(get_db)
+      ):
+          """
+          Retrieve list of {model_name}s with pagination.
+
+          Args:
+              skip: Number of records to skip
+              limit: Maximum number of records to return
+
+          Returns:
+              List of {model_name} objects
+          """
+          {model_name_lower}s = db.query({model_name}).offset(skip).limit(limit).all()
+          return {model_name_lower}s
+
+  read_single_endpoint:
+    FastAPI: |
+      @router.get("/{model_name_lower}s/{{id}}", response_model={model_name}Response)
+      async def get_{model_name_lower}(
+          id: int,
+          db: Session = Depends(get_db)
+      ):
+          """
+          Retrieve a single {model_name} by ID.
+
+          Args:
+              id: {model_name} ID
+
+          Returns:
+              {model_name} object
+
+          Raises:
+              404: {model_name} not found
+          """
+          {model_name_lower} = db.query({model_name}).filter({model_name}.id == id).first()
+          if not {model_name_lower}:
+              raise HTTPException(status_code=404, detail="{model_name} not found")
+          return {model_name_lower}
+
+  update_endpoint:
+    FastAPI: |
+      @router.put("/{model_name_lower}s/{{id}}", response_model={model_name}Response)
+      async def update_{model_name_lower}(
+          id: int,
+          {model_name_lower}_update: {model_name}Update,
+          db: Session = Depends(get_db)
+      ):
+          """
+          Update an existing {model_name}.
+
+          Args:
+              id: {model_name} ID
+              {model_name_lower}_update: Updated {model_name} data
+
+          Returns:
+              Updated {model_name} object
+
+          Raises:
+              404: {model_name} not found
+          """
+          db_{model_name_lower} = db.query({model_name}).filter({model_name}.id == id).first()
+          if not db_{model_name_lower}:
+              raise HTTPException(status_code=404, detail="{model_name} not found")
+
+          for key, value in {model_name_lower}_update.dict(exclude_unset=True).items():
+              setattr(db_{model_name_lower}, key, value)
+
+          db.commit()
+          db.refresh(db_{model_name_lower})
+          return db_{model_name_lower}
+
+  delete_endpoint:
+    FastAPI: |
+      @router.delete("/{model_name_lower}s/{{id}}", status_code=204)
+      async def delete_{model_name_lower}(
+          id: int,
+          db: Session = Depends(get_db)
+      ):
+          """
+          Delete a {model_name}.
+
+          Args:
+              id: {model_name} ID
+
+          Raises:
+              404: {model_name} not found
+          """
+          db_{model_name_lower} = db.query({model_name}).filter({model_name}.id == id).first()
+          if not db_{model_name_lower}:
+              raise HTTPException(status_code=404, detail="{model_name} not found")
+
+          db.delete(db_{model_name_lower})
+          db.commit()
+          return None
+
+# Validation checklist
+validation:
+  - "All 5 endpoints created (CREATE, READ list, READ single, UPDATE, DELETE)"
+  - "HTTP methods correct (POST, GET, GET, PUT/PATCH, DELETE)"
+  - "404 errors handled for single resource operations"
+  - "Request body validation in place"
+  - "Database transactions with rollback on error"
+  - "Proper status codes (200, 201, 204, 404, 500)"
+  - "Docstrings documenting parameters and returns"
+  - "Routes registered with application"
+
+# Example
+example:
+  task: "Add CRUD endpoints for User model in FastAPI"
+  model_name: "User"
+  framework: "FastAPI"
+  output_file: "app/routes/user.py"
+  placeholders:
+    model_name: "User"
+    model_name_lower: "user"

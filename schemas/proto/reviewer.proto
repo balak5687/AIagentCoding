@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package sdlc.reviewer;
+
+import "common.proto";
+
+// Output from Reviewer Agent
+message ReviewerOutput {
+  // Metadata
+  string agent = 1;                   // Always "reviewer"
+  common.Status status = 2;           // APPROVED | NEEDS_REVIEW | REJECTED
+  int32 confidence = 3;
+
+  // Review data
+  Review review = 4;
+
+  // Markdown content (rich review feedback)
+  string markdown_body = 5;
+}
+
+message Review {
+  string task_id = 1;                 // Task being reviewed
+  ReviewDecision decision = 2;
+
+  // Issues found
+  repeated ReviewIssue issues = 3;
+
+  // Positive findings
+  repeated string strengths = 4;
+
+  // Suggestions for improvement
+  repeated string suggestions = 5;
+
+  // Overall assessment
+  QualityAssessment quality = 6;
+}
+
+enum ReviewDecision {
+  DECISION_UNSPECIFIED = 0;
+  APPROVED = 1;                       // Good to go
+  NEEDS_MINOR_FIXES = 2;              // Small issues, can proceed with changes
+  REJECTED = 3;                       // Major issues, needs rework
+}
+
+message ReviewIssue {
+  string id = 1;                      // e.g., "security-001"
+  IssueCategory category = 2;
+  common.Severity severity = 3;
+  string description = 4;             // What's wrong
+  optional string file_path = 5;      // Where the issue is
+  optional int32 line_number = 6;
+  string suggestion = 7;              // How to fix
+  bool blocking = 8;                  // Must fix before approval?
+}
+
+enum IssueCategory {
+  CATEGORY_UNSPECIFIED = 0;
+  SECURITY = 1;
+  PERFORMANCE = 2;
+  CORRECTNESS = 3;
+  STYLE = 4;
+  MAINTAINABILITY = 5;
+  TESTING = 6;
+  DOCUMENTATION = 7;
+}
+
+message QualityAssessment {
+  int32 code_quality_score = 1;       // 0-100
+  int32 security_score = 2;           // 0-100
+  int32 maintainability_score = 3;    // 0-100
+  int32 test_coverage_estimate = 4;   // 0-100 (if tests present)
+  bool follows_patterns = 5;          // Follows project patterns?
+  string overall_comment = 6;
+}

@@ -1,0 +1,62 @@
+"purchase_orders": {
+        "AttributeDefinitions": [
+            {"AttributeName": "po_id", "AttributeType": "S"},
+            {"AttributeName": "po_number", "AttributeType": "S"},
+            {"AttributeName": "supplier_id", "AttributeType": "S"},
+            {"AttributeName": "status", "AttributeType": "S"},
+            {"AttributeName": "order_date", "AttributeType": "S"},
+        ],
+        "KeySchema": [
+            {"AttributeName": "po_id", "KeyType": "HASH"},
+        ],
+        "GlobalSecondaryIndexes": [
+            {
+                "IndexName": "supplier_id-order_date-index",
+                "KeySchema": [
+                    {"AttributeName": "supplier_id", "KeyType": "HASH"},
+                    {"AttributeName": "order_date", "KeyType": "RANGE"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            },
+            {
+                "IndexName": "status-order_date-index",
+                "KeySchema": [
+                    {"AttributeName": "status", "KeyType": "HASH"},
+                    {"AttributeName": "order_date", "KeyType": "RANGE"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            },
+            {
+                "IndexName": "po_number-index",
+                "KeySchema": [
+                    {"AttributeName": "po_number", "KeyType": "HASH"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            },
+        ],
+        "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+    },
+    "service_types": {
+        "AttributeDefinitions": [
+            {"AttributeName": "service_type_id", "AttributeType": "S"},
+            {"AttributeName": "category", "AttributeType": "S"},
+        ],
+        "KeySchema": [
+            {"AttributeName": "service_type_id", "KeyType": "HASH"},
+        ],
+        "GlobalSecondaryIndexes": [
+            {
+                "IndexName": "category-index",
+                "KeySchema": [
+                    {"AttributeName": "category", "KeyType": "HASH"},
+                ],
+                "Projection": {"ProjectionType": "ALL"},
+                "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            },
+        ],
+        "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+    },
+}

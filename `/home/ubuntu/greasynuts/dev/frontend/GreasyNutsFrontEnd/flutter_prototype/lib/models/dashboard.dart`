@@ -1,0 +1,313 @@
+/// Dashboard alert notification
+class DashboardAlert {
+  final String id;
+  final String type;
+  final String message;
+  final String severity;
+  final String? relatedEntityId;
+  final String timestamp;
+
+  DashboardAlert({
+    required this.id,
+    required this.type,
+    required this.message,
+    required this.severity,
+    this.relatedEntityId,
+    required this.timestamp,
+  });
+
+  factory DashboardAlert.fromJson(Map<String, dynamic> json) {
+    return DashboardAlert(
+      id: json['id'] ?? '',
+      type: json['type'] ?? '',
+      message: json['message'] ?? '',
+      severity: json['severity'] ?? 'warning',
+      relatedEntityId: json['related_entity_id'],
+      timestamp: json['timestamp'] ?? DateTime.now().toIso8601String(),
+    );
+  }
+
+  DateTime get parsedTimestamp {
+    try {
+      return DateTime.parse(timestamp);
+    } catch (e) {
+      return DateTime.now();
+    }
+  }
+
+  // Case-insensitive severity checks (reviewer fix: issue 1)
+  bool get isCritical => severity.toLowerCase() == 'critical';
+  bool get isWarning => severity.toLowerCase() == 'warning';
+
+  Color get severityColor {
+    if (isCritical) return Colors.red;
+    if (isWarning) return Colors.orange;
+    return Colors.blue;
+  }
+
+  IconData get severityIcon {
+    if (isCritical) return Icons.error;
+    if (isWarning) return Icons.warning;
+    return Icons.info;
+  }
+}
+
+/// Job snapshot for dashboard overview
+class JobSnapshot {
+  final String jobId;
+  final String vehicle;
+  final String issueType;
+  final String status;
+  final String? technician;
+  final String serviceStatus;
+  final String deliveryStatus;
+  final String? delayReason;
+  final int daysElapsed;
+
+  // Magic number extracted as named constant (reviewer fix: issue 2)
+  static const int delayThresholdDays = 3;
+
+  JobSnapshot({
+    required this.jobId,
+    required this.vehicle,
+    required this.issueType,
+    required this.status,
+    this.technician,
+    required this.serviceStatus,
+    required this.deliveryStatus,
+    this.delayReason,
+    required this.daysElapsed,
+  });
+
+  factory JobSnapshot.fromJson(Map<String, dynamic> json) {
+    return JobSnapshot(
+      jobId: json['job_id'] ?? '',
+      vehicle: json['vehicle'] ?? '',
+      issueType: json['issue_type'] ?? '',
+      status: json['status'] ?? '',
+      technician: json['technician'],
+      serviceStatus: json['service_status'] ?? '',
+      deliveryStatus: json['delivery_status'] ?? '',
+      delayReason: json['delay_reason'],
+      daysElapsed: json['days_elapsed'] ?? 0,
+    );
+  }
+
+  bool get isDelayed => daysElapsed > delayThresholdDays;
+  bool get hasTechnician => technician != null && technician!.isNotEmpty;
+  bool get hasDelayReason => delayReason != null && delayReason!.isNotEmpty;
+
+  Color get statusColor {
+    if (isDelayed) return Colors.red;
+    if (status.toLowerCase() == 'completed') return Colors.green;
+    if (status.toLowerCase() == 'in_progress') return Colors.blue;
+    return Colors.grey;
+  }
+}
+
+/// Supply chain issue affecting jobs
+class SupplyIssue {
+  final String poId;
+  final String supplier;
+  final String status;
+  final int affectedJobs;
+  final String? expectedDeliveryDate;
+
+  // Magic number extracted as named constant (reviewer fix: issue 3)
+  static const int criticalJobThreshold = 5;
+
+  SupplyIssue({
+    required this.poId,
+    required this.supplier,
+    required this.status,
+    required this.affectedJobs,
+    this.expectedDeliveryDate,
+  });
+
+  factory SupplyIssue.fromJson(Map<String, dynamic> json) {
+    return SupplyIssue(
+      poId: json['po_id'] ?? '',
+      supplier: json['supplier'] ?? '',
+      status: json['status'] ?? '',
+      affectedJobs: json['affected_jobs'] ?? 0,
+      expectedDeliveryDate: json['expected_delivery_date'],
+    );
+  }
+
+  DateTime? get parsedDeliveryDate {
+    if (expectedDeliveryDate == null) return null;
+    try {
+      return DateTime.parse(expectedDeliveryDate!);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Case-insensitive status check (reviewer fix: issue 1 pattern applied)
+  bool get isCritical =>
+      affectedJobs > criticalJobThreshold ||
+      status.toLowerCase() == 'delayed';
+
+  bool get hasDeliveryDate => expectedDeliveryDate != null;
+
+  Color get statusColor {
+    if (isCritical) return Colors.red;
+    if (status.toLowerCase() == 'pending') return Colors.orange;
+    if (status.toLowerCase() == 'delivered') return Colors.green;
+    return Colors.grey;
+  }
+}
+
+/// Search result item
+class SearchResult {
+  final String entityType;
+  final String entityId;
+  final String title;
+  final String? subtitle;
+  final String? url;
+
+  SearchResult({
+    required this.entityType,
+    required this.entityId,
+    required this.title,
+    this.subtitle,
+    this.url,
+  });
+
+  factory SearchResult.fromJson(Map<String, dynamic> json) {
+    return SearchResult(
+      entityType: json['entity_type'] ?? '',
+      entityId: json['entity_id'] ?? '',
+      title: json['title'] ?? '',
+      subtitle: json['subtitle'],
+      url: json['url'],
+    );
+  }
+
+  // Type-specific getters for cleaner UI code
+  bool get isJob => entityType.toLowerCase() == 'job';
+  bool get isCustomer => entityType.toLowerCase() == 'customer';
+  bool get isVehicle => entityType.toLowerCase() == 'vehicle';
+
+  IconData get icon {
+    if (isJob) return Icons.work;
+    if (isCustomer) return Icons.person;
+    if (isVehicle) return Icons.directions_car;
+    return Icons.search;
+  }
+}
+
+/// Notification item
+class NotificationItem {
+  final String id;
+  final String message;
+  final String type;
+  final bool read;
+  final String timestamp;
+  final String? relatedEntityId;
+
+  NotificationItem({
+    required this.id,
+    required this.message,
+    required this.type,
+    required this.read,
+    required this.timestamp,
+    this.relatedEntityId,
+  });
+
+  factory NotificationItem.fromJson(Map<String, dynamic> json) {
+    return NotificationItem(
+      id: json['id'] ?? '',
+      message: json['message'] ?? '',
+      type: json['type'] ?? '',
+      read: json['read'] ?? false,
+      timestamp: json['timestamp'] ?? DateTime.now().toIso8601String(),
+      relatedEntityId: json['related_entity_id'],
+    );
+  }
+
+  DateTime get parsedTimestamp {
+    try {
+      return DateTime.parse(timestamp);
+    } catch (e) {
+      return DateTime.now();
+    }
+  }
+
+  String get formattedTime {
+    final dt = parsedTimestamp;
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+
+    if (diff.inMinutes < 1) {
+      return 'Just now';
+    } else if (diff.inHours < 1) {
+      return '${diff.inMinutes}m ago';
+    } else if (diff.inDays < 1) {
+      return '${diff.inHours}h ago';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays}d ago';
+    } else {
+      return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+    }
+  }
+
+  bool get isUnread => !read;
+}
+
+/// Dashboard overview - consolidated response
+class DashboardOverview {
+  final List<DashboardAlert> alerts;
+  final List<JobSnapshot> jobs;
+  final List<SupplyIssue> supplyIssues;
+  final List<NotificationItem> notifications;
+
+  DashboardOverview({
+    required this.alerts,
+    required this.jobs,
+    required this.supplyIssues,
+    required this.notifications,
+  });
+
+  factory DashboardOverview.fromJson(Map<String, dynamic> json) {
+    final alertsList = json['alerts'] as List? ?? [];
+    final jobsList = json['jobs'] as List? ?? [];
+    final supplyIssuesList = json['supply_issues'] as List? ?? [];
+    final notificationsList = json['notifications'] as List? ?? [];
+
+    return DashboardOverview(
+      alerts: alertsList.map((a) => DashboardAlert.fromJson(a)).toList(),
+      jobs: jobsList.map((j) => JobSnapshot.fromJson(j)).toList(),
+      supplyIssues:
+          supplyIssuesList.map((s) => SupplyIssue.fromJson(s)).toList(),
+      notifications:
+          notificationsList.map((n) => NotificationItem.fromJson(n)).toList(),
+    );
+  }
+
+  // Aggregate getters for convenient UI checks
+  bool get hasAlerts => alerts.isNotEmpty;
+  bool get hasCriticalAlerts => alerts.any((a) => a.isCritical);
+  bool get hasDelayedJobs => jobs.any((j) => j.isDelayed);
+  bool get hasCriticalSupplyIssues => supplyIssues.any((s) => s.isCritical);
+  bool get hasUnreadNotifications => notifications.any((n) => n.isUnread);
+
+  int get criticalAlertCount => alerts.where((a) => a.isCritical).length;
+  int get delayedJobCount => jobs.where((j) => j.isDelayed).length;
+  int get unreadNotificationCount => notifications.where((n) => n.isUnread).length;
+}
+
+/// Date range preset
+enum DateRangePreset {
+  today,
+  yesterday,
+  week,
+  lastWeek,
+  month,
+  lastMonth,
+  quarter,
+  year,
+  lastYear,
+  all,
+  custom
+}

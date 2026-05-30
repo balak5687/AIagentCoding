@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package sdlc.github_scanner;
+
+import "common.proto";
+
+// Output from GitHub Scanner Agent
+message GitHubScannerOutput {
+  // Metadata
+  string agent = 1;                   // Always "github_scanner"
+  common.Status status = 2;           // COMPLETE | INCOMPLETE | FAILED
+  int32 confidence = 3;               // 0-100
+
+  // Issue data
+  IssueData issue = 4;
+
+  // Markdown content (rich description of the issue)
+  string markdown_body = 5;           // Full markdown analysis
+}
+
+message IssueData {
+  int32 number = 1;                   // Issue number
+  string title = 2;                   // Issue title
+  string body = 3;                    // Original issue body
+  string url = 4;                     // Full GitHub URL
+  repeated string labels = 5;         // Labels on the issue
+  string issue_type = 6;              // "epic", "feature", "bug", "enhancement"
+
+  // Parsed components (for EPICs)
+  repeated IssueComponent components = 7;
+
+  // Requirements extracted
+  Requirements requirements = 8;
+}
+
+message IssueComponent {
+  string name = 1;                    // e.g., "Sidebar Navigation"
+  string description = 2;             // What this component does
+  repeated string sub_components = 3; // e.g., ["Dashboard", "Jobs", "Customers"]
+  bool backend_required = 4;
+  bool frontend_required = 5;
+  bool database_required = 6;
+}
+
+message Requirements {
+  // Functional requirements
+  repeated string functional = 1;
+
+  // Non-functional requirements
+  repeated string non_functional = 2;
+
+  // Acceptance criteria
+  repeated string acceptance_criteria = 3;
+
+  // User stories (if applicable)
+  repeated string user_stories = 4;
+
+  // Data sources mentioned
+  repeated string data_sources = 5;   // e.g., "Jobs", "Invoices", "Suppliers"
+}

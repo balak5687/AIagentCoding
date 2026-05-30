@@ -1,0 +1,117 @@
+name: add_unit_tests
+description: Add unit tests for a function or class
+category: testing
+difficulty: low
+reduces_hallucination: true
+
+pattern:
+  keywords: ["unit test", "test", "pytest", "unittest", "jest"]
+  entities_required: ["target_function", "test_framework"]
+
+steps:
+  - step: 1
+    action: "Identify function/class to test"
+    output: "target_name"
+
+  - step: 2
+    action: "Identify test framework"
+    output: "framework"
+    options: ["pytest", "unittest", "jest", "mocha"]
+
+  - step: 3
+    action: "Create or locate test file"
+    deterministic: true
+    patterns:
+      pytest: "tests/test_{module_name}.py"
+      unittest: "tests/test_{module_name}.py"
+      jest: "__tests__/{module_name}.test.js"
+
+  - step: 4
+    action: "Import target function/class"
+    template: "test_import"
+
+  - step: 5
+    action: "Add test for normal/happy path"
+    template: "test_happy_path"
+    validation:
+      - "Test function named test_{function_name}"
+      - "Assertions present"
+      - "Expected result validated"
+
+  - step: 6
+    action: "Add test for edge cases"
+    template: "test_edge_cases"
+    examples:
+      - "Empty input"
+      - "Null/None input"
+      - "Boundary values"
+
+  - step: 7
+    action: "Add test for error cases"
+    template: "test_error_cases"
+    examples:
+      - "Invalid input"
+      - "Expected exceptions"
+
+  - step: 8
+    action: "Add docstrings to tests"
+    deterministic: true
+    include:
+      - "What is being tested"
+      - "Expected behavior"
+
+templates:
+  test_import:
+    pytest: |
+      import pytest
+      from {module_path} import {function_name}
+
+  test_happy_path:
+    pytest: |
+      def test_{function_name}_happy_path():
+          """Test {function_name} with valid inputs."""
+          # Arrange
+          input_data = {example_input}
+          expected = {example_output}
+
+          # Act
+          result = {function_name}(input_data)
+
+          # Assert
+          assert result == expected
+
+  test_edge_cases:
+    pytest: |
+      def test_{function_name}_empty_input():
+          """Test {function_name} with empty input."""
+          result = {function_name}([])
+          assert result == {expected_for_empty}
+
+      def test_{function_name}_none_input():
+          """Test {function_name} with None input."""
+          with pytest.raises(ValueError):
+              {function_name}(None)
+
+  test_error_cases:
+    pytest: |
+      def test_{function_name}_invalid_input():
+          """Test {function_name} raises error for invalid input."""
+          with pytest.raises({ExpectedException}):
+              {function_name}({invalid_input})
+
+validation:
+  - "Test file created in correct location"
+  - "Imports correct"
+  - "At least 3 test cases (happy, edge, error)"
+  - "Test naming follows convention (test_*)"
+  - "Assertions present in all tests"
+  - "Docstrings explain what is tested"
+
+example:
+  task: "Add unit tests for calculate_total function"
+  function_name: "calculate_total"
+  framework: "pytest"
+  test_cases:
+    - "Normal input"
+    - "Empty list"
+    - "Negative numbers"

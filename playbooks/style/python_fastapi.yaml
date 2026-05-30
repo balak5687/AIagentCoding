@@ -1,0 +1,307 @@
+metadata:
+  level: style
+  version: "1.0.0"
+  created_by: human
+  supervised_by: "senior_python_engineer"
+  approved_date: "2026-05-23"
+  last_updated: "2026-05-23"
+
+name: python_fastapi_style
+description: Python and FastAPI coding standards and best practices
+category: style
+language: python
+framework: fastapi
+
+# Based on: PEP 8, FastAPI best practices, Google Python Style Guide
+
+style_rules:
+  general_python:
+    - rule: "Use 4 spaces for indentation (never tabs)"
+      enforcement: strict
+
+    - rule: "Line length max 100 characters (not 79)"
+      enforcement: warning
+      exception: "URLs, long strings can exceed"
+
+    - rule: "Use type hints for all function signatures"
+      enforcement: strict
+      example: |
+        def process_user(user_id: int, name: str) -> User:
+            ...
+
+    - rule: "Use docstrings for all public functions/classes"
+      enforcement: strict
+      format: "Google style"
+      example: |
+        def get_user(user_id: int) -> Optional[User]:
+            """Retrieve user by ID.
+
+            Args:
+                user_id: The user's ID
+
+            Returns:
+                User object if found, None otherwise
+
+            Raises:
+                ValidationError: If user_id is invalid
+            """
+
+    - rule: "Import order: stdlib, third-party, local"
+      enforcement: strict
+      example: |
+        # Standard library
+        import os
+        from typing import List, Optional
+
+        # Third-party
+        from fastapi import FastAPI, HTTPException
+        from pydantic import BaseModel
+
+        # Local
+        from .models import User
+        from .database import get_db
+
+  fastapi_specific:
+    - rule: "Use APIRouter for route organization"
+      enforcement: strict
+      pattern: |
+        from fastapi import APIRouter
+
+        router = APIRouter(prefix="/users", tags=["users"])
+
+        @router.get("/")
+        async def list_users():
+            ...
+
+    - rule: "Use Pydantic models for request/response"
+      enforcement: strict
+      example: |
+        from pydantic import BaseModel, Field
+
+        class UserCreate(BaseModel):
+            username: str = Field(..., min_length=3, max_length=50)
+            email: str = Field(..., regex=r"^[\w\.-]+@[\w\.-]+\.\w+$")
+
+        class UserResponse(BaseModel):
+            id: int
+            username: str
+            email: str
+
+            class Config:
+                from_attributes = True  # For SQLAlchemy
+
+    - rule: "Use dependency injection for database"
+      enforcement: strict
+      example: |
+        from fastapi import Depends
+        from sqlalchemy.orm import Session
+
+        def get_db():
+            db = SessionLocal()
+            try:
+                yield db
+            finally:
+                db.close()
+
+        @router.get("/users/{user_id}")
+        async def get_user(
+            user_id: int,
+            db: Session = Depends(get_db)
+        ):
+            ...
+
+    - rule: "Use async/await for I/O operations"
+      enforcement: recommended
+      guidance: "Use async for DB queries, HTTP calls, file I/O"
+      example: |
+        @router.get("/users")
+        async def list_users(db: Session = Depends(get_db)):
+            users = await db.execute(select(User))
+            return users.scalars().all()
+
+    - rule: "HTTP status codes explicit"
+      enforcement: strict
+      example: |
+        @router.post("/users", status_code=201)
+        @router.get("/users/{id}", status_code=200)
+        @router.delete("/users/{id}", status_code=204)
+
+    - rule: "Error handling with HTTPException"
+      enforcement: strict
+      example: |
+        from fastapi import HTTPException
+
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+
+    - rule: "Use response_model for type safety"
+      enforcement: strict
+      example: |
+        @router.get("/users/{id}", response_model=UserResponse)
+        async def get_user(user_id: int):
+            ...
+
+  naming_conventions:
+    - convention: "snake_case for functions, variables"
+      examples: ["get_user", "user_id", "create_item"]
+
+    - convention: "PascalCase for classes"
+      examples: ["User", "UserCreate", "OrderResponse"]
+
+    - convention: "UPPER_SNAKE_CASE for constants"
+      examples: ["MAX_RETRIES", "API_VERSION", "DEFAULT_TIMEOUT"]
+
+    - convention: "Prefix private with underscore"
+      examples: ["_internal_helper", "_validate_data"]
+
+  error_handling:
+    - pattern: "Try/except with specific exceptions"
+      anti_pattern: "Bare except: pass"
+      correct: |
+        try:
+            result = risky_operation()
+        except ValueError as e:
+            logger.error(f"Invalid value: {e}")
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logger.exception("Unexpected error")
+            raise HTTPException(status_code=500, detail="Internal server error")
+
+    - pattern: "Always log exceptions"
+      enforcement: strict
+      example: |
+        import logging
+        logger = logging.getLogger(__name__)
+
+        try:
+            ...
+        except Exception as e:
+            logger.exception(f"Error in {operation_name}")
+            raise
+
+  database_patterns:
+    - pattern: "Use SQLAlchemy ORM models"
+      example: |
+        from sqlalchemy import Column, Integer, String
+        from sqlalchemy.ext.declarative import declarative_base
+
+        Base = declarative_base()
+
+        class User(Base):
+            __tablename__ = "users"
+
+            id = Column(Integer, primary_key=True, index=True)
+            username = Column(String(50), unique=True, nullable=False)
+            email = Column(String(100), unique=True, nullable=False)
+
+    - pattern: "Use context manager for transactions"
+      example: |
+        with db.begin():
+            user = User(username="john", email="john@example.com")
+            db.add(user)
+            # Auto-commit on success, rollback on error
+
+  security:
+    - rule: "Validate all inputs with Pydantic"
+      enforcement: strict
+
+    - rule: "Never store passwords in plain text"
+      enforcement: strict
+      example: |
+        from passlib.context import CryptContext
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+        hashed = pwd_context.hash(password)
+
+    - rule: "Use environment variables for secrets"
+      enforcement: strict
+      example: |
+        from pydantic_settings import BaseSettings
+
+        class Settings(BaseSettings):
+            database_url: str
+            secret_key: str
+
+            class Config:
+                env_file = ".env"
+
+    - rule: "Enable CORS explicitly"
+      enforcement: strict
+      example: |
+        from fastapi.middleware.cors import CORSMiddleware
+
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["https://example.com"],
+            allow_methods=["GET", "POST"],
+            allow_headers=["*"],
+        )
+
+  testing:
+    - rule: "Use pytest for tests"
+      enforcement: recommended
+
+    - rule: "Use TestClient for API testing"
+      example: |
+        from fastapi.testclient import TestClient
+
+        client = TestClient(app)
+
+        def test_get_user():
+            response = client.get("/users/1")
+            assert response.status_code == 200
+            assert response.json()["username"] == "john"
+
+    - rule: "Use pytest fixtures for setup"
+      example: |
+        import pytest
+
+        @pytest.fixture
+        def db_session():
+            db = TestSessionLocal()
+            try:
+                yield db
+            finally:
+                db.close()
+
+production_readiness:
+  - check: "Environment-specific configuration"
+    requirement: "Use .env files, never hardcode"
+
+  - check: "Logging configured properly"
+    requirement: "Use structured logging with appropriate levels"
+
+  - check: "Database migrations in place"
+    requirement: "Use Alembic for schema management"
+
+  - check: "Health check endpoint"
+    requirement: |
+      @app.get("/health")
+      async def health_check():
+          return {"status": "healthy"}
+
+  - check: "API documentation enabled"
+    requirement: "FastAPI auto-generates docs at /docs"
+
+  - check: "Rate limiting implemented"
+    requirement: "Use slowapi or similar"
+
+  - check: "Request validation comprehensive"
+    requirement: "All inputs validated with Pydantic"
+
+human_review_required:
+  - "Security-related code (authentication, authorization)"
+  - "Database schema changes"
+  - "API contract changes (breaking changes)"
+  - "Error handling for critical operations"
+  - "Production configuration"
+
+references:
+  - "PEP 8 - Style Guide for Python Code"
+  - "FastAPI Best Practices: https://fastapi.tiangolo.com/tutorial/best-practices/"
+  - "Google Python Style Guide"
+  - "SQLAlchemy Best Practices"

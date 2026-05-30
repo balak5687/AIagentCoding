@@ -1,0 +1,37 @@
+# Core
+anthropic>=0.18.0
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# Git Operations
+GitPython>=3.1.40
+
+# GitHub Integration
+PyGithub>=2.1.1
+
+# Markdown Parsing
+markdown>=3.5.0
+python-frontmatter>=1.0.0
+
+# Diff/Patch
+diff-match-patch>=20230430
+
+# Async Support
+aiohttp>=3.9.0
+
+# Utilities
+networkx>=3.2
+
+# Project Brain - Code Intelligence
+tree-sitter>=0.20.0
+tree-sitter-python>=0.20.0
+tree-sitter-dart>=0.0.1
+rank-bm25>=0.2.2
+
+# Project Brain - Semantic Search
+sentence-transformers>=2.2.0
+numpy>=1.24.0
+
+# Project Brain - LSP Integration
+pygls>=1.1.0
+pyright>=1.1.0

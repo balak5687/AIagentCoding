@@ -1,0 +1,65 @@
+class WorkOrderStatus(str, Enum):
+    """Work order status enumeration"""
+    NEW = "new"
+    ESTIMATE_CREATED = "estimate_created"
+    CUSTOMER_APPROVED = "customer_approved"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    WAITING_PARTS = "waiting_parts"
+    DELAYED = "delayed"
+    CLOSED = "closed"
+
+
+class Priority(str, Enum):
+    """Priority level enumeration"""
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    URGENT = "urgent"
+
+
+class DeliveryStatus(str, Enum):
+    """Part delivery status enumeration"""
+    PENDING = "pending"
+    ORDERED = "ordered"
+    IN_TRANSIT = "in_transit"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
+
+class Recommendation(BaseModel):
+    """Repair recommendation model"""
+    description: Optional[str] = None
+    estimated_cost: Optional[Decimal] = None
+    priority: Optional[Priority] = None
+    notes: Optional[str] = None
+
+
+class CostBreakdown(BaseModel):
+    """Cost breakdown model"""
+    labor_cost: Optional[Decimal] = None
+    parts_cost: Optional[Decimal] = None
+    tax: Optional[Decimal] = None
+    discount: Optional[Decimal] = None
+    total: Optional[Decimal] = None
+
+
+class JobCreateRequest(BaseModel):
+    """Request model for creating a new work order"""
+    vehicle_id: str
+    customer_id: str
+    description: Optional[str] = None
+    priority: Optional[Priority] = None
+    estimated_completion: Optional[datetime] = None
+    assigned_technician: Optional[str] = None
+
+
+class JobListFilter(BaseModel):
+    """Filter model for listing work orders"""
+    status: Optional[WorkOrderStatus] = None
+    priority: Optional[Priority] = None
+    customer_id: Optional[str] = None
+    vehicle_id: Optional[str] = None
+    from_date: Optional[datetime] = None
+    to_date: Optional[datetime] = None
+    assigned_technician: Optional[str] = None

@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package sdlc.planner;
+
+import "common.proto";
+
+// Output from Planner Agent
+message PlannerOutput {
+  // Metadata
+  string agent = 1;                   // Always "planner"
+  common.Status status = 2;
+  int32 confidence = 3;
+
+  // Plan data
+  Plan plan = 4;
+
+  // Markdown content (rich plan document)
+  string markdown_body = 5;
+}
+
+message Plan {
+  string title = 1;
+  string summary = 2;
+
+  // Task breakdown
+  repeated Task tasks = 3;
+
+  // Execution strategy
+  ExecutionStrategy strategy = 4;
+
+  // Dependency graph
+  DependencyGraph dependencies = 5;
+}
+
+message Task {
+  string id = 1;                      // Unique task ID (e.g., "task_1")
+  string name = 2;                    // Short name
+  string description = 3;             // What needs to be done
+
+  // Files involved
+  repeated common.FileReference files = 4;
+
+  // Dependencies
+  repeated string depends_on = 5;     // Task IDs this depends on
+  repeated string blocks = 6;         // Task IDs this blocks
+
+  // Execution metadata
+  string approach = 7;                // "cognitive" | "deterministic" | "search"
+  optional string playbook = 8;       // Playbook name (if deterministic)
+  string agent = 9;                   // Which agent executes this ("coder", "tester")
+
+  // Estimates
+  int32 complexity = 10;              // 1-10
+  string estimated_time = 11;         // e.g., "5 minutes"
+
+  // Test requirements
+  repeated string test_cases = 12;    // Test cases for this task
+}
+
+message ExecutionStrategy {
+  string type = 1;                    // "sequential" | "parallel" | "hybrid"
+  repeated ExecutionPhase phases = 2;
+  int32 max_parallel_tasks = 3;       // Max tasks to run in parallel
+}
+
+message ExecutionPhase {
+  int32 order = 1;
+  string name = 2;
+  repeated string task_ids = 3;       // Tasks in this phase
+  string execution_mode = 4;          // "sequential" | "parallel"
+}
+
+message DependencyGraph {
+  repeated DependencyEdge edges = 1;
+  int32 max_depth = 2;                // Longest dependency chain
+  repeated string critical_path = 3;  // Task IDs on critical path
+}
+
+message DependencyEdge {
+  string from_task = 1;               // Task ID
+  string to_task = 2;                 // Task ID
+  string relationship = 3;            // "blocks" | "requires" | "recommends"
+}

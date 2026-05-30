@@ -1,0 +1,69 @@
+syntax = "proto3";
+
+package sdlc.coder;
+
+import "common.proto";
+
+// Output from Coder Agent
+message CoderOutput {
+  // Metadata
+  string agent = 1;                   // Always "coder"
+  common.Status status = 2;
+  int32 confidence = 3;
+
+  // Code changes
+  Implementation implementation = 4;
+
+  // Markdown content (rich implementation notes + code blocks)
+  string markdown_body = 5;
+}
+
+message Implementation {
+  string task_id = 1;                 // Task being implemented
+  string summary = 2;                 // What was implemented
+
+  // Code changes (SEARCH/REPLACE blocks)
+  repeated CodeChange changes = 3;
+
+  // Files created
+  repeated FileCreation new_files = 4;
+
+  // Implementation notes
+  repeated ImplementationNote notes = 5;
+
+  // Peer help requested?
+  bool request_peer = 6;
+  string peer_question = 7;           // Question for peer agent
+}
+
+message CodeChange {
+  string file_path = 1;               // File to modify
+  ChangeType type = 2;                // MODIFY | DELETE | RENAME
+
+  // SEARCH/REPLACE block (Aider format)
+  string search_block = 3;            // Code to find
+  string replace_block = 4;           // Code to replace with
+
+  // Context
+  optional int32 approximate_line = 5; // Approximate location (hint)
+  string reason = 6;                  // Why this change
+}
+
+enum ChangeType {
+  CHANGE_TYPE_UNSPECIFIED = 0;
+  MODIFY = 1;
+  DELETE = 2;
+  RENAME = 3;
+}
+
+message FileCreation {
+  string file_path = 1;               // Path for new file
+  string content = 2;                 // Full file content
+  string purpose = 3;                 // Why creating this file
+  string template_used = 4;           // Template/playbook used (if any)
+}
+
+message ImplementationNote {
+  string type = 1;                    // "decision", "assumption", "caveat", "todo"
+  string note = 2;                    // The note content
+}

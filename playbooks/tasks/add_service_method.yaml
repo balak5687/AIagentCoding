@@ -1,0 +1,51 @@
+name: add_service_method
+description: Add a method to an existing Flask service class in the GarageHQ backend
+category: backend
+difficulty: medium
+reduces_hallucination: true
+
+pattern:
+  keywords: ["service method", "add method", "service function", "business logic", "service layer"]
+  entities_required: ["service_class", "method_name"]
+
+steps:
+  - step: 1
+    action: "Read the existing service file to understand class structure, imports, and __init__"
+    deterministic: true
+
+  - step: 2
+    action: "Identify existing repository instances available in __init__ (e.g. self.work_order_repo)"
+    deterministic: true
+    note: "Use ONLY existing repo instances — never instantiate new ones inside a method"
+
+  - step: 3
+    action: "Write method signature with type hints and docstring"
+    template: |
+      def {method_name}(self, {params}) -> {return_type}:
+          """Brief description."""
+
+  - step: 4
+    action: "Implement using existing repo methods: get(id), list_all(limit), create(data), update(id, data)"
+    deterministic: true
+    note: "All new fields on returned models must be Optional for backward compatibility"
+
+  - step: 5
+    action: "Handle DynamoDB field naming — use snake_case matching what's stored in the table"
+    deterministic: true
+
+  - step: 6
+    action: "Return appropriate type — List[Dict], Dict, or Pydantic model"
+    deterministic: true
+
+  - step: 7
+    action: "Add SEARCH/REPLACE block targeting the correct insertion point in the class"
+    validation:
+      - "Method is inside the class (indented correctly)"
+      - "No new repositories instantiated inline"
+      - "All DynamoDB fields are Optional in Pydantic models"
+
+checklist:
+  - "Method added inside existing class"
+  - "Uses only existing self.X_repo instances"
+  - "Returns Optional fields for backward compat"
+  - "SEARCH block uniquely identifies insertion point"

@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package sdlc.common;
+
+// Common enums and messages used across agents
+
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  COMPLETE = 1;
+  INCOMPLETE = 2;
+  IN_PROGRESS = 3;
+  FAILED = 4;
+  NEEDS_REVIEW = 5;
+  APPROVED = 6;
+  REJECTED = 7;
+}
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  LOW = 1;
+  MEDIUM = 2;
+  HIGH = 3;
+  CRITICAL = 4;
+}
+
+// File reference with path and optional line numbers
+message FileReference {
+  string path = 1;                    // Relative path from project root
+  optional int32 start_line = 2;      // Starting line number (optional)
+  optional int32 end_line = 3;        // Ending line number (optional)
+  string description = 4;             // What this file is for
+}
+
+// Component in the system (backend/frontend module)
+message Component {
+  string name = 1;                    // e.g., "Dashboard Routes"
+  string type = 2;                    // e.g., "route", "service", "widget"
+  repeated FileReference files = 3;   // Files this component touches
+  string description = 4;             // What this component does
+  repeated string dependencies = 5;   // Other components this depends on
+}
+
+// Risk assessment
+message Risk {
+  string id = 1;                      // e.g., "security-001"
+  string description = 2;             // Human-readable risk description
+  Severity severity = 3;              // How severe is this risk
+  string mitigation = 4;              // How to mitigate
+}
+
+// Technical debt item
+message TechnicalDebt {
+  string description = 1;
+  Severity severity = 2;
+  string reason = 3;                  // Why this debt exists
+}

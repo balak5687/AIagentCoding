@@ -1,0 +1,435 @@
+metadata:
+  level: task
+  version: "1.0.0"
+  created_by: human
+  supervised_by: "security_architect"
+  approved_date: "2026-05-23"
+  last_updated: "2026-05-23"
+  project_context: "GreasyNuts ERP - Production readiness and security"
+  requires_human_review: true
+
+name: production_security_checklist
+description: Comprehensive production readiness and security checklist for Flask + Flutter + DynamoDB applications
+category: deployment
+language: any
+framework: any
+
+#Based on: OWASP Top 10, AWS Security Best Practices, Production Deployment Standards
+
+ai_guidance: |
+  This playbook ensures applications are production-ready and secure.
+  ALL items must be verified before production deployment.
+  Human review REQUIRED for security-critical items.
+
+steps:
+  - step: 1
+    action: "Backend Security Audit"
+    deterministic: true
+    checklist_items:
+      - "JWT secret key is strong (32+ characters)"
+      - "Password hashing uses bcrypt with proper salt"
+      - "All API endpoints have authentication"
+      - "Role-based access control implemented"
+      - "CORS configured with specific origins"
+      - "No secrets in code or version control"
+      - "Environment variables for all sensitive data"
+
+  - step: 2
+    action: "Input Validation & Sanitization"
+    deterministic: true
+    checklist_items:
+      - "Pydantic validation on all request bodies"
+      - "SQL injection not applicable (DynamoDB)"
+      - "XSS prevention (proper output encoding)"
+      - "File upload validation (type, size)"
+      - "Request size limits enforced"
+
+  - step: 3
+    action: "Authentication & Authorization"
+    deterministic: true
+    checklist_items:
+      - "Login rate limiting (5 attempts/minute)"
+      - "Password strength requirements enforced"
+      - "Token expiration configured (1 hour)"
+      - "Refresh token mechanism implemented"
+      - "Logout endpoint clears tokens"
+      - "Auto-logout on 401 responses"
+
+  - step: 4
+    action: "Database Security (DynamoDB)"
+    deterministic: true
+    checklist_items:
+      - "IAM roles with least privilege"
+      - "Encryption at rest enabled"
+      - "Encryption in transit (HTTPS)"
+      - "No hardcoded AWS credentials"
+      - "GSI indexes for query optimization"
+      - "Backup strategy configured"
+
+  - step: 5
+    action: "API Security Headers"
+    deterministic: true
+    headers_required:
+      - "X-Content-Type-Options: nosniff"
+      - "X-Frame-Options: DENY"
+      - "X-XSS-Protection: 1; mode=block"
+      - "Strict-Transport-Security: max-age=31536000"
+      - "Content-Security-Policy"
+    implementation: |
+      # Flask
+      @app.after_request
+      def add_security_headers(response):
+          response.headers['X-Content-Type-Options'] = 'nosniff'
+          response.headers['X-Frame-Options'] = 'DENY'
+          response.headers['X-XSS-Protection'] = '1; mode=block'
+          response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+          response.headers['Content-Security-Policy'] = "default-src 'self'"
+          return response
+
+  - step: 6
+    action: "HTTPS/SSL Configuration"
+    deterministic: true
+    checklist_items:
+      - "SSL certificate installed (Let's Encrypt or commercial)"
+      - "HTTPS enforced (redirect HTTP to HTTPS)"
+      - "TLS 1.2+ required (disable older versions)"
+      - "Strong cipher suites configured"
+      - "HTTP Strict Transport Security (HSTS) enabled"
+
+  - step: 7
+    action: "Error Handling & Logging"
+    deterministic: true
+    checklist_items:
+      - "All exceptions caught and logged"
+      - "Generic error messages to clients"
+      - "No stack traces in production responses"
+      - "Structured logging (JSON format)"
+      - "Log rotation configured"
+      - "Never log sensitive data"
+      - "Centralized logging (CloudWatch, ELK)"
+
+  - step: 8
+    action: "Rate Limiting"
+    deterministic: true
+    endpoints_require_limiting:
+      - "/api/auth/login - 5 requests/minute"
+      - "/api/auth/register - 3 requests/hour"
+      - "/api/* - 100 requests/minute (general)"
+    implementation: |
+      # Flask-Limiter
+      from flask_limiter import Limiter
+
+      limiter = Limiter(
+          app,
+          key_func=lambda: request.remote_addr,
+          default_limits=["100 per minute"]
+      )
+
+      @auth_bp.route('/login', methods=['POST'])
+      @limiter.limit("5 per minute")
+      def login():
+          ...
+
+  - step: 9
+    action: "Dependency Security"
+    deterministic: true
+    checklist_items:
+      - "All dependencies pinned to specific versions"
+      - "No known vulnerabilities (run safety check)"
+      - "Regular dependency updates scheduled"
+      - "Unused dependencies removed"
+    command: |
+      # Python
+      pip install safety
+      safety check --full-report
+
+      # Flutter
+      flutter pub outdated
+
+  - step: 10
+    action: "Frontend Security"
+    deterministic: true
+    checklist_items:
+      - "Tokens stored securely (not localStorage)"
+      - "No sensitive data in browser console"
+      - "XSS prevention (proper escaping)"
+      - "CSRF token for state-changing operations"
+      - "Input validation on client side"
+      - "Sanitize user-generated content"
+
+  - step: 11
+    action: "Docker Security"
+    deterministic: true
+    checklist_items:
+      - "Run as non-root user in containers"
+      - "Minimal base images (alpine)"
+      - "Multi-stage builds for smaller images"
+      - "Scan images for vulnerabilities"
+      - "No secrets in Dockerfile"
+      - "Latest security patches applied"
+    example: |
+      # Dockerfile
+      FROM python:3.11-alpine AS builder
+      # ... build steps ...
+
+      FROM python:3.11-alpine
+      RUN addgroup -g 1000 appuser && adduser -D -u 1000 -G appuser appuser
+      USER appuser
+      # ... runtime steps ...
+
+  - step: 12
+    action: "Environment Configuration"
+    deterministic: true
+    checklist_items:
+      - ".env file with all secrets (not in git)"
+      - "Different secrets for dev/staging/prod"
+      - "SECRET_KEY is strong and unique"
+      - "JWT_SECRET_KEY different from SECRET_KEY"
+      - "AWS credentials configured securely"
+      - "Database credentials not hardcoded"
+
+  - step: 13
+    action: "Monitoring & Alerting"
+    deterministic: false
+    checklist_items:
+      - "Health check endpoint (/api/health)"
+      - "Application monitoring (APM tool)"
+      - "Error tracking (Sentry recommended)"
+      - "Performance metrics collected"
+      - "Alerts configured for errors"
+      - "Alerts for high resource usage"
+      - "CloudWatch dashboards (AWS)"
+
+  - step: 14
+    action: "Backup & Recovery"
+    deterministic: true
+    checklist_items:
+      - "DynamoDB point-in-time recovery enabled"
+      - "On-demand backups scheduled"
+      - "Backup retention policy defined"
+      - "Disaster recovery plan documented"
+      - "Recovery process tested"
+
+  - step: 15
+    action: "Performance Optimization"
+    deterministic: false
+    checklist_items:
+      - "Database queries optimized (use GSI)"
+      - "Connection pooling configured"
+      - "Caching strategy implemented"
+      - "Static assets compressed"
+      - "CDN for static files (optional)"
+      - "Load testing performed"
+
+  - step: 16
+    action: "Documentation"
+    deterministic: true
+    required_docs:
+      - "API documentation (Swagger/OpenAPI)"
+      - "Deployment guide"
+      - "Environment setup guide"
+      - "Security incident response plan"
+      - "Runbook for common issues"
+
+  - step: 17
+    action: "Compliance & Audit Trail"
+    deterministic: true
+    checklist_items:
+      - "User actions logged for audit"
+      - "Data retention policy defined"
+      - "GDPR compliance (if applicable)"
+      - "Privacy policy published"
+      - "Terms of service published"
+
+validation:
+  critical_checks:
+    - "HTTPS enabled and enforced"
+    - "JWT secret keys are strong"
+    - "No secrets in code or version control"
+    - "Authentication on all endpoints"
+    - "Rate limiting on auth endpoints"
+    - "Error logging comprehensive"
+    - "Security headers configured"
+    - "DynamoDB IAM permissions correct"
+
+  recommended_checks:
+    - "Monitoring and alerting configured"
+    - "Backup strategy in place"
+    - "Load testing completed"
+    - "Documentation complete"
+    - "Dependency vulnerabilities scanned"
+
+owasp_top_10_coverage:
+  - vulnerability: "A01:2021 - Broken Access Control"
+    mitigation: "JWT authentication, role-based access, @require_role decorators"
+
+  - vulnerability: "A02:2021 - Cryptographic Failures"
+    mitigation: "Bcrypt for passwords, HTTPS enforced, JWT with HS256"
+
+  - vulnerability: "A03:2021 - Injection"
+    mitigation: "DynamoDB (no SQL), Pydantic validation, input sanitization"
+
+  - vulnerability: "A04:2021 - Insecure Design"
+    mitigation: "3-layer architecture, separation of concerns, least privilege"
+
+  - vulnerability: "A05:2021 - Security Misconfiguration"
+    mitigation: "Security headers, CORS configured, debug=False in prod"
+
+  - vulnerability: "A06:2021 - Vulnerable Components"
+    mitigation: "Pinned dependencies, safety check, regular updates"
+
+  - vulnerability: "A07:2021 - Authentication Failures"
+    mitigation: "Strong passwords, rate limiting, token expiration"
+
+  - vulnerability: "A08:2021 - Software and Data Integrity"
+    mitigation: "Signed commits, verified packages, backup strategy"
+
+  - vulnerability: "A09:2021 - Logging Failures"
+    mitigation: "Comprehensive logging, CloudWatch, error tracking"
+
+  - vulnerability: "A10:2021 - Server-Side Request Forgery"
+    mitigation: "No user-controlled URLs, validate external requests"
+
+aws_security_best_practices:
+  iam:
+    - "Least privilege principle"
+    - "Separate roles for dev/staging/prod"
+    - "MFA required for production access"
+    - "Rotate access keys regularly"
+
+  dynamodb:
+    - "Encryption at rest enabled"
+    - "VPC endpoints for private access"
+    - "DynamoDB Streams for audit trail"
+    - "Point-in-time recovery enabled"
+
+  cloudwatch:
+    - "Log all API calls"
+    - "Alarm on high error rates"
+    - "Alarm on unusual activity"
+    - "Dashboard for key metrics"
+
+production_deployment_steps:
+  - step: "Pre-deployment"
+    tasks:
+      - "Run all tests (unit, integration, E2E)"
+      - "Security scan (safety, npm audit)"
+      - "Code review completed"
+      - "Staging deployment successful"
+      - "Load testing passed"
+
+  - step: "Deployment"
+    tasks:
+      - "Backup current production"
+      - "Set maintenance mode (optional)"
+      - "Deploy new version"
+      - "Run database migrations"
+      - "Health check verification"
+
+  - step: "Post-deployment"
+    tasks:
+      - "Monitor error rates"
+      - "Check performance metrics"
+      - "Verify critical flows"
+      - "Document deployment"
+      - "Notify team"
+
+rollback_plan:
+  triggers:
+    - "Health check fails"
+    - "Error rate > 5%"
+    - "Critical functionality broken"
+
+  steps:
+    - "Stop new deployments"
+    - "Restore previous Docker images"
+    - "Restore database if needed"
+    - "Clear caches"
+    - "Verify rollback successful"
+    - "Investigate root cause"
+
+human_review_gates:
+  - gate: "Security Configuration"
+    reviewers: ["Security Engineer", "DevOps Engineer"]
+    items:
+      - "JWT secret keys"
+      - "AWS IAM permissions"
+      - "CORS origins"
+      - "SSL certificates"
+
+  - gate: "Production Deployment"
+    reviewers: ["Tech Lead", "DevOps Engineer"]
+    items:
+      - "All checklist items completed"
+      - "Tests passing"
+      - "Backup strategy verified"
+      - "Rollback plan tested"
+
+  - gate: "Compliance"
+    reviewers: ["Legal", "Security"]
+    items:
+      - "Privacy policy reviewed"
+      - "Terms of service reviewed"
+      - "Data handling compliant"
+
+post_deployment_monitoring:
+  first_24_hours:
+    - "Monitor error rates every hour"
+    - "Check application logs"
+    - "Verify user reports"
+    - "Performance metrics review"
+
+  first_week:
+    - "Daily error log review"
+    - "User feedback analysis"
+    - "Performance trend analysis"
+    - "Security incident check"
+
+incident_response_plan:
+  - phase: "Detection"
+    actions: ["Monitor alerts", "User reports", "Log analysis"]
+
+  - phase: "Triage"
+    actions: ["Assess severity", "Identify affected users", "Document incident"]
+
+  - phase: "Mitigation"
+    actions: ["Quick fix or rollback", "Communication to users", "Implement workaround"]
+
+  - phase: "Resolution"
+    actions: ["Root cause analysis", "Permanent fix", "Deploy to production"]
+
+  - phase: "Post-mortem"
+    actions: ["Document lessons learned", "Update playbooks", "Improve monitoring"]
+
+example_production_env:
+  docker-compose:
+    services:
+      - nginx: "Reverse proxy + SSL termination"
+      - backend: "Flask + Gunicorn (4 workers)"
+      - dynamodb: "AWS DynamoDB (not local)"
+      - monitoring: "CloudWatch + Sentry"
+
+  environment_variables:
+    - "APP_ENV=production"
+    - "DEBUG=False"
+    - "SECRET_KEY=<strong-32+-char-key>"
+    - "JWT_SECRET_KEY=<different-32+-char-key>"
+    - "DYNAMODB_ENDPOINT=<blank for AWS>"
+    - "AWS_REGION=us-east-1"
+    - "CORS_ORIGINS=https://app.greasynuts.com"
+    - "LOG_LEVEL=INFO"
+    - "SENTRY_DSN=<sentry-project-dsn>"
+
+  nginx_config:
+    ssl: "Let's Encrypt certificate"
+    redirect: "HTTP → HTTPS"
+    proxy: "Backend on port 5000"
+    static: "Flutter build files"
+    headers: "Security headers added"
+
+references:
+  - "OWASP Top 10: https://owasp.org/www-project-top-ten/"
+  - "AWS Security Best Practices: https://aws.amazon.com/architecture/security-identity-compliance/"
+  - "Flask Security: https://flask.palletsprojects.com/en/latest/security/"
+  - "DynamoDB Security: https://docs.aws.amazon.com/dynamodb/latest/developerguide/security.html"
+  - "NIST Cybersecurity Framework: https://www.nist.gov/cyberframework"
